@@ -37,10 +37,7 @@ func CircleAround(center V2, radius float64) []V2 {
 	// the center
 	newRes := make([]V2, 0, len(res)*4+1)
 	for _, r := range res {
-		newRes = append(newRes, center.Add(r))
-		newRes = append(newRes, center.Add(V2{r.Z, -r.X}))
-		newRes = append(newRes, center.Add(V2{-r.X, -r.Z}))
-		newRes = append(newRes, center.Add(V2{-r.Z, r.X}))
+		newRes = append(newRes, center.Add(r), center.Add(V2{r.Z, -r.X}), center.Add(V2{-r.X, -r.Z}), center.Add(V2{-r.Z, r.X}))
 	}
 	newRes = append(newRes, center)
 	return newRes
