@@ -47,13 +47,13 @@ func (c ClientboundUpdateLight) EncodeInto(w io.Writer) (err error) {
 	if len(c.BlockLightArrays) != blockLightMaskHiCount {
 		return fmt.Errorf("blockLightMaskHiCount does not match the amount of arrays")
 	}
-	for _, array := range c.SkyLightArrays {
-		enc.writeVarInt("length", len(array))
-		enc.writeByteArray("sky light array", array[:])
+	for i := range c.SkyLightArrays {
+		enc.writeVarInt("length", len(c.SkyLightArrays[i]))
+		enc.writeByteArray("sky light array", c.SkyLightArrays[i][:])
 	}
-	for _, array := range c.BlockLightArrays {
-		enc.writeVarInt("length", len(array))
-		enc.writeByteArray("block light array", array[:])
+	for i := range c.BlockLightArrays {
+		enc.writeVarInt("length", len(c.BlockLightArrays[i]))
+		enc.writeByteArray("block light array", c.BlockLightArrays[i][:])
 	}
 
 	return
