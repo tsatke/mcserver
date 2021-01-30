@@ -2,7 +2,7 @@ name: Issues from Todo
 on: [ push ]
 jobs:
   test:
-    name: Test on ${{ matrix.os }} with Go ${{ matrix.go_version }}
+    name: Create issues from Todos
     runs-on: ubuntu-latest
     steps:
       - name: Login
