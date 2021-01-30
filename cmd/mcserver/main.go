@@ -34,10 +34,7 @@ var (
 				<-cmd.Context().Done()
 				srv.Stop()
 			}()
-			if err := srv.Start(cmd.Context()); err != nil {
-				return err
-			}
-			return nil
+			return srv.Start(cmd.Context())
 		},
 		Version: Version,
 	}
