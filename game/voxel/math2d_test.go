@@ -86,7 +86,7 @@ func Test_CircleAround(t *testing.T) {
 var Result interface{}
 
 func Benchmark_circleAround(b *testing.B) {
-	for _, radius := range []int{1000} {
+	for _, radius := range []int{32} {
 		b.Run(fmt.Sprintf("radius=%d", radius), _benchCircle(CircleAround, float64(radius)))
 	}
 }
