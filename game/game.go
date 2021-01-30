@@ -154,6 +154,40 @@ func (g *Game) AddPlayer(p *Player) {
 	g.WritePacket(p, packet.ClientboundDeclareRecipes{
 		Recipes: []packet.Recipe{}, // TODO: declare recipes
 	})
+	g.sendTags(p)
+	g.WritePacket(p, packet.ClientboundEntityStatus{
+		EntityID: 1,  // same EID as when joining
+		Status:   23, // disable reduced debug screen info
+	})
+	g.WritePacket(p, packet.ClientboundPlayerPositionAndLook{
+		X:          0,
+		Y:          69,
+		Z:          0,
+		Yaw:        0,
+		Pitch:      0,
+		Flags:      0,
+		TeleportID: 12,
+	})
+	g.WritePacket(p, packet.ClientboundPlayerInfo{
+		Action: packet.PlayerInfoActionAddPlayer,
+		Players: []packet.PlayerInfoPlayer{
+			{
+				UUID:           p.UUID,
+				Name:           p.name,
+				Gamemode:       packet.GamemodeSurvival,
+				Ping:           100,
+				HasDisplayName: false,
+			},
+		},
+	})
+	g.WritePacket(p, packet.ClientboundPlayerInfo{
+		Action: packet.PlayerInfoUpdateLatency,
+		Players: []packet.PlayerInfoPlayer{
+			{
+				Ping: 32,
+			},
+		},
+	})
 
 	go g.handleIncomingPlayerMessages(p)
 }

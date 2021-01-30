@@ -34,6 +34,10 @@ func (e encoder) writeByte(fieldName string, val int8) {
 	_write(e, fieldName, types.NewByte(val))
 }
 
+func (e encoder) writeByteArray(fieldName string, val []byte) {
+	_write(e, fieldName, types.NewByteArray(val))
+}
+
 func (e encoder) writeUbyte(fieldName string, val uint8) {
 	_write(e, fieldName, types.NewUnsignedByte(val))
 }
@@ -44,6 +48,14 @@ func (e encoder) writeBoolean(fieldName string, val bool) {
 
 func (e encoder) writeLong(fieldName string, val int64) {
 	_write(e, fieldName, types.NewLong(val))
+}
+
+func (e encoder) writeDouble(fieldName string, val float64) {
+	_write(e, fieldName, types.NewDouble(val))
+}
+
+func (e encoder) writeFloat(fieldName string, val float32) {
+	_write(e, fieldName, types.NewFloat(val))
 }
 
 func (e encoder) writeUUID(fieldName string, val uuid.UUID) {

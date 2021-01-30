@@ -72,6 +72,18 @@ func (d decoder) readLong(fieldName string) int64 {
 	return int64(*val)
 }
 
+func (d decoder) readDouble(fieldName string) float64 {
+	val := types.NewDouble(0)
+	panicIffErr(fieldName, val.DecodeFrom(d.rd))
+	return float64(*val)
+}
+
+func (d decoder) readFloat(fieldName string) float32 {
+	val := types.NewFloat(0)
+	panicIffErr(fieldName, val.DecodeFrom(d.rd))
+	return float32(*val)
+}
+
 func (d decoder) readUUID(fieldName string) uuid.UUID {
 	val := types.NewUUID([16]byte{})
 	panicIffErr(fieldName, val.DecodeFrom(d.rd))

@@ -30,7 +30,7 @@ func (c ClientboundDeclareRecipes) EncodeInto(w io.Writer) (err error) {
 
 	enc := encoder{w}
 
-	enc.writeVarInt("num reciped", len(c.Recipes))
+	enc.writeVarInt("num recipes", len(c.Recipes))
 	for i, recipe := range c.Recipes {
 		enc.writeID("recipe["+strconv.Itoa(i)+"] type", recipe.Type)
 		enc.writeID("recipe["+strconv.Itoa(i)+"] id", recipe.ID)
