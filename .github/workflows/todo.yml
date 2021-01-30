@@ -14,7 +14,7 @@ jobs:
       - name: Jira TODO
         uses: atlassian/gajira-todo@master
         with:
-          project: MCSERV
+          project: MSER
           issuetype: Task
           description: Created automatically via GitHub Actions
         env:
