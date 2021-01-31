@@ -1,9 +1,7 @@
 package network
 
 import (
-	"errors"
 	"fmt"
-	"io"
 	"net"
 
 	"github.com/rs/zerolog"
@@ -14,7 +12,7 @@ import (
 type Conn struct {
 	log        zerolog.Logger
 	underlying net.Conn
-	state      packet.Phase
+	phase      packet.Phase
 	closed     bool
 }
 
@@ -22,33 +20,32 @@ func NewConn(log zerolog.Logger, underlying net.Conn) *Conn {
 	return &Conn{
 		log:        log,
 		underlying: underlying,
-		state:      packet.PhaseHandshaking,
+		phase:      packet.PhaseHandshaking,
 	}
 }
 
-func (c Conn) State() packet.Phase {
-	return c.state
+func (c Conn) Phase() packet.Phase {
+	return c.phase
 }
 
 func (c Conn) IP() net.IP {
 	return c.underlying.RemoteAddr().(*net.TCPAddr).IP
 }
 
-func (c *Conn) SetState(state packet.Phase) {
-	c.state = state
+func (c *Conn) TransitionTo(phase packet.Phase) {
+	c.log.Debug().
+		Stringer("to", phase).
+		Msg("transition connection")
+	c.phase = phase
 }
 
-func (c *Conn) ReadPacket() (packet.Packet, error) {
+func (c *Conn) ReadPacket() (packet.Serverbound, error) {
 	if c.closed {
 		return nil, ErrClosed
 	}
 
-	packet, err := packet.Decode(c.underlying, c.state)
+	packet, err := packet.Decode(c.underlying, c.phase)
 	if err != nil {
-		if errors.Is(err, io.EOF) {
-			_ = c.Close()
-			return nil, ErrClosed
-		}
 		return nil, err
 	}
 	c.log.Trace().
@@ -57,17 +54,12 @@ func (c *Conn) ReadPacket() (packet.Packet, error) {
 	return packet, nil
 }
 
-func (c *Conn) WritePacket(p packet.Packet) error {
+func (c *Conn) WritePacket(p packet.Clientbound) error {
 	if c.closed {
 		return ErrClosed
 	}
 
-	clientbound, ok := p.(packet.Clientbound)
-	if !ok {
-		return fmt.Errorf("packet %s does not implement Clientbound", clientbound.Name())
-	}
-
-	if err := packet.Encode(clientbound, c.underlying); err != nil {
+	if err := packet.Encode(p, c.underlying); err != nil {
 		return fmt.Errorf("encode into: %w", err)
 	}
 	c.log.Trace().

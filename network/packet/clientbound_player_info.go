@@ -47,7 +47,7 @@ type ClientboundPlayerInfo struct {
 }
 
 func (ClientboundPlayerInfo) ID() ID       { return IDClientboundPlayerInfo }
-func (ClientboundPlayerInfo) Name() string { return "PlayerInfo" }
+func (ClientboundPlayerInfo) Name() string { return "Player Info" }
 
 func (c ClientboundPlayerInfo) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)

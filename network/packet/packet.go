@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"reflect"
 )
 
@@ -88,7 +89,7 @@ func Encode(pkg Clientbound, w io.Writer) (err error) {
 	enc := Encoder{&buf}
 	enc.WriteVarInt("packet ID", int(pkg.ID()))
 	panicIffErr("packet", pkg.EncodeInto(&buf))
-	enc.WriteVarInt("packet length", buf.Len())
+	Encoder{w}.WriteVarInt("packet length", buf.Len())
 	if _, err := buf.WriteTo(w); err != nil {
 		return fmt.Errorf("write to: %w", err)
 	}
@@ -108,7 +109,8 @@ func Decode(rd io.Reader, state Phase) (p Serverbound, err error) {
 	payloadReader := io.LimitReader(rd, int64(payloadLength))
 	packetType := serverboundPacketTypes[state][packetID]
 	if packetType == nil {
-		return nil, fmt.Errorf("unknown ID %s in Phase %s", packetID, state)
+		_, _ = io.CopyN(ioutil.Discard, rd, int64(payloadLength)) // discard remaining bytes of the packet
+		return nil, fmt.Errorf("unknown ID %s in Phase %s, discarding", packetID, state)
 	}
 	packetInterface := reflect.New(packetType).Interface()
 	packet := packetInterface.(Serverbound)

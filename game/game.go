@@ -2,7 +2,9 @@ package game
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/google/uuid"
@@ -68,7 +70,7 @@ func (g *Game) AmountOfConnectedPlayers() int {
 	return len(g.connectedPlayers)
 }
 
-func (g *Game) WritePacket(p *Player, pkg packet.Packet) {
+func (g *Game) WritePacket(p *Player, pkg packet.Clientbound) {
 	if err := p.conn.WritePacket(pkg); err != nil {
 		g.log.Debug().
 			Err(err).
@@ -188,6 +190,9 @@ func (g *Game) AddPlayer(p *Player) {
 			},
 		},
 	})
+	g.WritePacket(p, packet.ClientboundUpdateViewPosition{
+		Chunk: voxel.V2{0, 0},
+	})
 
 	go g.handleIncomingPlayerMessages(p)
 }
@@ -196,12 +201,20 @@ func (g *Game) handleIncomingPlayerMessages(p *Player) {
 	for {
 		pkg, err := p.conn.ReadPacket()
 		if err != nil {
-			g.log.Error().
-				Err(err).
-				Stringer("player", p.UUID).
-				Msg("read packet failed, disconnect")
-			g.Disconnect(p)
-			return
+			if errors.Is(err, io.EOF) {
+				g.log.Info().
+					Err(err).
+					Stringer("player", p.UUID).
+					Msg("player disconnected")
+				g.Disconnect(p)
+				return
+			} else {
+				g.log.Error().
+					Err(err).
+					Stringer("player", p.UUID).
+					Msg("read packet failed, disconnect")
+			}
+			continue
 		}
 
 	retryLoop:

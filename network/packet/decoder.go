@@ -11,6 +11,10 @@ import (
 	"github.com/tsatke/mcserver/game/id"
 )
 
+// Decoder is a struct that can decode protocol values from a reader.
+// Please note, that for concise and clean API reasons, all Read methods
+// fail by panicking an error. Avoid use outside of the packet package if possible.
+// If you need to use this, make sure that you recover any errors.
 type Decoder struct {
 	Rd io.Reader
 }

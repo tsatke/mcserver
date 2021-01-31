@@ -6,14 +6,14 @@ type ID int
 
 // Packet IDs.
 const (
-	IDServerboundHandshake             ID = 0x00
-	IDServerboundLoginStart            ID = 0x00
-	IDServerboundRequest               ID = 0x00
-	IDServerboundTeleportConfirm       ID = 0x00
-	IDServerboundPing                  ID = 0x01
-	IDServerboundClientSettings        ID = 0x05
-	IDServerboundPluginMessage         ID = 0x0B
-	IDServerboundPlayerPositionAndLook ID = 0x13
+	IDServerboundHandshake                 ID = 0x00
+	IDServerboundLoginStart                ID = 0x00
+	IDServerboundRequest                   ID = 0x00
+	IDServerboundTeleportConfirm           ID = 0x00
+	IDServerboundPing                      ID = 0x01
+	IDServerboundClientSettings            ID = 0x05
+	IDServerboundPluginMessage             ID = 0x0B
+	IDServerboundPlayerPositionAndRotation ID = 0x13
 
 	IDClientboundResponse              ID = 0x00
 	IDClientboundDisconnectLogin       ID = 0x00
@@ -28,6 +28,7 @@ const (
 	IDClientboundPlayerInfo            ID = 0x32
 	IDClientboundPlayerPositionAndLook ID = 0x34
 	IDClientboundHeldItemChange        ID = 0x3F
+	IDClientboundUpdateViewPosition    ID = 0x40
 	IDClientboundDeclareRecipes        ID = 0x5A
 	IDClientboundTags                  ID = 0x5B
 )

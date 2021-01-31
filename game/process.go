@@ -7,6 +7,8 @@ import (
 	"github.com/tsatke/mcserver/network/packet"
 )
 
+// processPacket checks the given packet and delegates it to the appropriate processing method.
+// While the packet is processed, this method holds the lock on the given player.
 func (g *Game) processPacket(source *Player, pkg packet.Serverbound) {
 	source.Lock()
 	defer source.Unlock()
@@ -15,13 +17,18 @@ func (g *Game) processPacket(source *Player, pkg packet.Serverbound) {
 	case *packet.ServerboundPluginMessage:
 		g.processServerboundPluginMessage(source, p)
 	case *packet.ServerboundClientSettings:
-		source.client.settings.locale = p.Locale
-		source.client.settings.viewDistance = p.ViewDistance
+		g.processServerboundClientSettings(source, p)
 	default:
 		g.log.Warn().
 			Str("name", pkg.Name()).
-			Msg("unhandled packet")
+			Msg("no processor for packet")
+		return
 	}
+}
+
+func (g *Game) processServerboundClientSettings(source *Player, p *packet.ServerboundClientSettings) {
+	source.client.settings.locale = p.Locale
+	source.client.settings.viewDistance = p.ViewDistance
 }
 
 func (g *Game) processServerboundPluginMessage(source *Player, p *packet.ServerboundPluginMessage) {
