@@ -40,7 +40,7 @@ func stringMaxLength(fieldName string, maxLen int, str string) error {
 }
 
 func stringNotEmpty(fieldName, str string) error {
-	if len(str) == 0 {
+	if str == "" {
 		return fmt.Errorf("%s must not be empty", fieldName)
 	}
 	return nil
