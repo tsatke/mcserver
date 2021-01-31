@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundEntityStatus{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundEntityStatus{}))
 }
 
 type ClientboundEntityStatus struct {
@@ -20,10 +20,10 @@ func (ClientboundEntityStatus) Name() string { return "Entity Status" }
 func (c ClientboundEntityStatus) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeInt("entity id", int32(c.EntityID))
-	enc.writeByte("entity status", c.Status)
+	enc.WriteInt("entity id", int32(c.EntityID))
+	enc.WriteByte("entity status", c.Status)
 
 	return
 }

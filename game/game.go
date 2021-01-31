@@ -10,12 +10,12 @@ import (
 	"github.com/spf13/afero"
 	"github.com/tsatke/nbt"
 
+	"github.com/tsatke/mcserver/game/chat"
 	"github.com/tsatke/mcserver/game/chunk"
 	"github.com/tsatke/mcserver/game/entity"
 	"github.com/tsatke/mcserver/game/id"
 	"github.com/tsatke/mcserver/game/voxel"
 	"github.com/tsatke/mcserver/network/packet"
-	"github.com/tsatke/mcserver/network/packet/types"
 )
 
 const (
@@ -80,7 +80,7 @@ func (g *Game) WritePacket(p *Player, pkg packet.Packet) {
 	}
 }
 
-func (g *Game) DisconnectWithReason(p *Player, reason types.Chat) {
+func (g *Game) DisconnectWithReason(p *Player, reason chat.Chat) {
 	// we absolutely don't care what happens on the connection anymore, so
 	// if the write fails - ok, if it doesn't - ok.
 	_ = p.conn.WritePacket(packet.ClientboundDisconnectPlay{
@@ -174,7 +174,7 @@ func (g *Game) AddPlayer(p *Player) {
 			{
 				UUID:           p.UUID,
 				Name:           p.name,
-				Gamemode:       packet.GamemodeSurvival,
+				Gamemode:       int(GamemodeSurvival),
 				Ping:           100,
 				HasDisplayName: false,
 			},
@@ -226,7 +226,7 @@ func (g *Game) handleIncomingPlayerMessages(p *Player) {
 
 func (g *Game) sendServerDifficulty(p *Player) {
 	g.WritePacket(p, packet.ClientboundServerDifficulty{
-		Difficulty:       packet.DifficultyNormal,
+		Difficulty:       byte(DifficultyNormal),
 		DifficultyLocked: true,
 	})
 }
@@ -235,8 +235,8 @@ func (g *Game) sendJoinGameMessage(p *Player, dimensionCodec *nbt.Compound) {
 	g.WritePacket(p, packet.ClientboundJoinGame{
 		EntityID:         1,
 		Hardcore:         false,
-		Gamemode:         packet.GamemodeSurvival,
-		PreviousGamemode: packet.GamemodeUnknown,
+		Gamemode:         int(GamemodeSurvival),
+		PreviousGamemode: -1,
 		WorldNames: []id.ID{
 			id.ParseID("world"),
 		},

@@ -1,4 +1,9 @@
-package types
+package packet
+
+import (
+	"encoding/binary"
+	"fmt"
+)
 
 // Data type sizes in bytes.
 const (
@@ -19,3 +24,23 @@ const (
 	AngleSize         = 1
 	UUIDSize          = 16
 )
+
+var (
+	ByteOrder = binary.BigEndian
+)
+
+func recoverAndSetErr(err *error) {
+	if rec := recover(); rec != nil {
+		if recErr, ok := rec.(error); ok {
+			*err = recErr
+		} else {
+			panic(rec)
+		}
+	}
+}
+
+func panicIffErr(fieldName string, err error) {
+	if err != nil {
+		panic(fmt.Errorf("%s: %w", fieldName, err))
+	}
+}

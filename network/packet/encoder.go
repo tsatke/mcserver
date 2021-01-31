@@ -1,81 +1,119 @@
 package packet
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
+	"math"
 
 	"github.com/google/uuid"
 	"github.com/tsatke/nbt"
 
+	"github.com/tsatke/mcserver/game/chat"
 	"github.com/tsatke/mcserver/game/id"
-	"github.com/tsatke/mcserver/network/packet/types"
 )
 
-type encoder struct {
-	w io.Writer
+type Encoder struct {
+	W io.Writer
 }
 
-func (e encoder) writeVarInt(fieldName string, val int) {
-	_write(e, fieldName, types.NewVarInt(val))
+func (e Encoder) WriteVarInt(fieldName string, val int) {
+	value := uint32(val)
+	buf := make([]byte, 0)
+	for {
+		tmp := byte(value & 0b01111111)
+		value >>= 7
+		if value != 0 {
+			tmp |= 0b10000000
+		}
+		buf = append(buf, tmp)
+		if value == 0 {
+			break
+		}
+	}
+	_write(e.W, fieldName, buf[:])
 }
 
-func (e encoder) writeInt(fieldName string, val int32) {
-	_write(e, fieldName, types.NewInt(val))
+func (e Encoder) WriteInt(fieldName string, val int32) {
+	var buf [IntSize]byte
+	ByteOrder.PutUint32(buf[:], uint32(val))
+	_write(e.W, fieldName, buf[:])
 }
 
-func (e encoder) writeString(fieldName, s string) {
-	_write(e, fieldName, types.NewString(s))
+func (e Encoder) WriteString(fieldName, s string) {
+	e.WriteVarInt(fieldName+" string length", len(s))
+	_write(e.W, fieldName, []byte(s))
 }
 
-func (e encoder) writeUshort(fieldName string, val uint16) {
-	_write(e, fieldName, types.NewUnsignedShort(val))
+func (e Encoder) WriteUshort(fieldName string, val uint16) {
+	var buf [UnsignedShortSize]byte
+	ByteOrder.PutUint16(buf[:], val)
+	_write(e.W, fieldName, buf[:])
 }
 
-func (e encoder) writeByte(fieldName string, val int8) {
-	_write(e, fieldName, types.NewByte(val))
+func (e Encoder) WriteByte(fieldName string, val int8) {
+	_write(e.W, fieldName, []byte{byte(val)})
 }
 
-func (e encoder) writeByteArray(fieldName string, val []byte) {
-	_write(e, fieldName, types.NewByteArray(val))
+func (e Encoder) WriteByteArray(fieldName string, val []byte) {
+	_write(e.W, fieldName, val)
 }
 
-func (e encoder) writeUbyte(fieldName string, val uint8) {
-	_write(e, fieldName, types.NewUnsignedByte(val))
+func (e Encoder) WriteUbyte(fieldName string, val uint8) {
+	_write(e.W, fieldName, []byte{val})
 }
 
-func (e encoder) writeBoolean(fieldName string, val bool) {
-	_write(e, fieldName, types.NewBoolean(val))
+func (e Encoder) WriteBoolean(fieldName string, val bool) {
+	if val {
+		_write(e.W, fieldName, []byte{0x01})
+	} else {
+		_write(e.W, fieldName, []byte{0x00})
+	}
 }
 
-func (e encoder) writeLong(fieldName string, val int64) {
-	_write(e, fieldName, types.NewLong(val))
+func (e Encoder) WriteLong(fieldName string, val int64) {
+	var buf [LongSize]byte
+	ByteOrder.PutUint64(buf[:], uint64(val))
+	_write(e.W, fieldName, buf[:])
 }
 
-func (e encoder) writeDouble(fieldName string, val float64) {
-	_write(e, fieldName, types.NewDouble(val))
+func (e Encoder) WriteDouble(fieldName string, val float64) {
+	var buf [DoubleSize]byte
+	ByteOrder.PutUint64(buf[:], math.Float64bits(val))
+	_write(e.W, fieldName, buf[:])
 }
 
-func (e encoder) writeFloat(fieldName string, val float32) {
-	_write(e, fieldName, types.NewFloat(val))
+func (e Encoder) WriteFloat(fieldName string, val float32) {
+	var buf [FloatSize]byte
+	ByteOrder.PutUint32(buf[:], math.Float32bits(val))
+	_write(e.W, fieldName, buf[:])
 }
 
-func (e encoder) writeUUID(fieldName string, val uuid.UUID) {
-	_write(e, fieldName, types.NewUUID(val))
+func (e Encoder) WriteUUID(fieldName string, val uuid.UUID) {
+	_write(e.W, fieldName, val[:])
 }
 
-func (e encoder) writeChat(fieldName string, val types.Chat) {
-	_write(e, fieldName, &val)
+func (e Encoder) WriteChat(fieldName string, val chat.Chat) {
+	data, err := json.Marshal(val)
+	panicIffErr(fieldName, err)
+	e.WriteString(fieldName, string(data))
 }
 
-func (e encoder) writeID(fieldName string, val id.ID) {
-	_write(e, fieldName, types.NewString(val.String()))
+func (e Encoder) WriteID(fieldName string, val id.ID) {
+	e.WriteString(fieldName, val.String())
 }
 
-func (e encoder) writeNBT(fieldName string, val nbt.Tag) {
-	_write(e, fieldName, &types.NBT{
-		Tag: val,
-	})
+func (e Encoder) WriteNBT(fieldName string, val nbt.Tag) {
+	enc := nbt.NewEncoder(e.W, ByteOrder)
+	panicIffErr(fieldName, enc.WriteTag(val))
 }
 
-func _write(e encoder, fieldName string, v types.Value) {
-	panicIffErr(fieldName, v.EncodeInto(e.w))
+func _write(w io.Writer, fieldName string, buf []byte) {
+	n, err := w.Write(buf)
+	if err != nil {
+		panicIffErr(fieldName, fmt.Errorf("write: %w", err))
+	}
+	if n != len(buf) {
+		panicIffErr(fieldName, fmt.Errorf("need to write %d bytes, but wrote %d", len(buf), n))
+	}
 }

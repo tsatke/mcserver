@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerPacket(StateStatus, reflect.TypeOf(ServerboundPing{}))
+	RegisterPacket(StateStatus, reflect.TypeOf(ServerboundPing{}))
 }
 
 type ServerboundPing struct {
@@ -19,9 +19,9 @@ func (ServerboundPing) Name() string { return "Ping" }
 func (s *ServerboundPing) DecodeFrom(rd io.Reader) (err error) {
 	defer recoverAndSetErr(&err)
 
-	dec := decoder{rd}
+	dec := Decoder{rd}
 
-	s.Payload = dec.readLong("payload")
+	s.Payload = dec.ReadLong("payload")
 
 	return
 }

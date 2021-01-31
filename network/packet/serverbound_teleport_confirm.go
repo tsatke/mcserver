@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ServerboundTeleportConfirm{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ServerboundTeleportConfirm{}))
 }
 
 type ServerboundTeleportConfirm struct {
@@ -19,9 +19,9 @@ func (ServerboundTeleportConfirm) Name() string { return "Teleport Confirm" }
 func (s *ServerboundTeleportConfirm) DecodeFrom(rd io.Reader) (err error) {
 	defer recoverAndSetErr(&err)
 
-	dec := decoder{rd}
+	dec := Decoder{rd}
 
-	s.TeleportID = dec.readVarInt("teleport id")
+	s.TeleportID = dec.ReadVarInt("teleport id")
 
 	return
 }

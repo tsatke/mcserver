@@ -5,11 +5,11 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/tsatke/mcserver/network/packet/types"
+	"github.com/tsatke/mcserver/game/chat"
 )
 
 func init() {
-	registerPacket(StateStatus, reflect.TypeOf(ClientboundResponse{}))
+	RegisterPacket(StateStatus, reflect.TypeOf(ClientboundResponse{}))
 }
 
 type (
@@ -18,7 +18,7 @@ type (
 	Response struct {
 		Version     ResponseVersion `json:"version"`
 		Players     ResponsePlayers `json:"players"`
-		Description types.Chat      `json:"description"`
+		Description chat.Chat       `json:"description"`
 		Favicon     string          `json:"favicon,omitempty"`
 	}
 
@@ -54,9 +54,9 @@ func (ClientboundResponse) Name() string { return "Response" }
 func (c ClientboundResponse) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeString("json response", c.JSONResponse.String())
+	enc.WriteString("json response", c.JSONResponse.String())
 
 	return
 }

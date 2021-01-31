@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundPlayerPositionAndLook{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundPlayerPositionAndLook{}))
 }
 
 type ClientboundPlayerPositionAndLook struct {
@@ -22,15 +22,15 @@ func (ClientboundPlayerPositionAndLook) Name() string { return "Player Position 
 func (c ClientboundPlayerPositionAndLook) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeDouble("x", c.X)
-	enc.writeDouble("y", c.Y)
-	enc.writeDouble("z", c.Z)
-	enc.writeFloat("yaw", c.Yaw)
-	enc.writeFloat("pitch", c.Pitch)
-	enc.writeByte("flags", c.Flags)
-	enc.writeVarInt("teleport id", c.TeleportID)
+	enc.WriteDouble("x", c.X)
+	enc.WriteDouble("y", c.Y)
+	enc.WriteDouble("z", c.Z)
+	enc.WriteFloat("yaw", c.Yaw)
+	enc.WriteFloat("pitch", c.Pitch)
+	enc.WriteByte("flags", c.Flags)
+	enc.WriteVarInt("teleport id", c.TeleportID)
 
 	return
 }

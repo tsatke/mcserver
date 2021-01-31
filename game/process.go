@@ -5,7 +5,6 @@ import (
 
 	"github.com/tsatke/mcserver/game/id"
 	"github.com/tsatke/mcserver/network/packet"
-	"github.com/tsatke/mcserver/network/packet/types"
 )
 
 func (g *Game) processPacket(source *Player, pkg packet.Serverbound) {
@@ -29,11 +28,23 @@ func (g *Game) processServerboundPluginMessage(source *Player, p *packet.Serverb
 	switch p.Channel {
 	case id.ParseID("minecraft:brand"):
 		rd := bytes.NewReader(p.Data)
-		// brand is prefixed with a varint, indicating its length, which we discard, since we know the
-		// length of the string plus the size of the varint
-		var brandLen types.VarInt
-		_ = brandLen.DecodeFrom(rd)
-		source.client.brand = string(p.Data[brandLen.Len():])
+		if err := func() (e error) {
+			defer func() {
+				if rec := recover(); rec != nil {
+					if recErr, ok := rec.(error); ok {
+						e = recErr
+					} else {
+						panic(rec)
+					}
+				}
+			}()
+			source.client.brand = packet.Decoder{rd}.ReadString("client brand")
+			return
+		}(); err != nil {
+			g.log.Error().
+				Err(err).
+				Msg("client sent invalid brand, ignoring packet")
+		}
 	default:
 		g.log.Debug().
 			Stringer("channel", p.Channel).

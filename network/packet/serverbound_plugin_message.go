@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ServerboundPluginMessage{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ServerboundPluginMessage{}))
 }
 
 type ServerboundPluginMessage struct {
@@ -24,9 +24,9 @@ func (ServerboundPluginMessage) Name() string { return "Plugin Message" }
 func (s *ServerboundPluginMessage) DecodeFrom(rd io.Reader) (err error) {
 	defer recoverAndSetErr(&err)
 
-	dec := decoder{rd}
+	dec := Decoder{rd}
 
-	s.Channel = dec.readID("channel")
+	s.Channel = dec.ReadID("channel")
 	data, err := ioutil.ReadAll(rd)
 	if err != nil {
 		return fmt.Errorf("read all: %w", err)

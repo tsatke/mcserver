@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ServerboundClientSettings{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ServerboundClientSettings{}))
 }
 
 type ChatMode int
@@ -39,14 +39,14 @@ func (ServerboundClientSettings) Name() string { return "Client Settings" }
 func (s *ServerboundClientSettings) DecodeFrom(rd io.Reader) (err error) {
 	defer recoverAndSetErr(&err)
 
-	dec := decoder{rd}
+	dec := Decoder{rd}
 
-	s.Locale = dec.readString("locale")
-	s.ViewDistance = int(dec.readByte("view distance"))
-	s.ChatMode = ChatMode(dec.readVarInt("chat mode"))
-	s.ChatColors = dec.readBoolean("chat colors")
-	s.DisplayedSkinParts = dec.readUbyte("displayed skin parts")
-	s.MainHand = Hand(dec.readVarInt("main hand"))
+	s.Locale = dec.ReadString("locale")
+	s.ViewDistance = int(dec.ReadByte("view distance"))
+	s.ChatMode = ChatMode(dec.ReadVarInt("chat mode"))
+	s.ChatColors = dec.ReadBoolean("chat colors")
+	s.DisplayedSkinParts = dec.ReadUbyte("displayed skin parts")
+	s.MainHand = Hand(dec.ReadVarInt("main hand"))
 
 	return
 }

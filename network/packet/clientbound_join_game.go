@@ -11,24 +11,14 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundJoinGame{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundJoinGame{}))
 }
-
-type Gamemode int8
-
-const (
-	GamemodeUnknown Gamemode = iota - 1
-	GamemodeSurvival
-	GamemodeCreative
-	GamemodeAdventure
-	GamemodeSpectator
-)
 
 type ClientboundJoinGame struct {
 	EntityID            int32
 	Hardcore            bool
-	Gamemode            Gamemode
-	PreviousGamemode    Gamemode
+	Gamemode            int
+	PreviousGamemode    int
 	WorldNames          []id.ID
 	DimensionCodec      nbt.Tag
 	Dimension           nbt.Tag
@@ -48,26 +38,26 @@ func (ClientboundJoinGame) Name() string { return "Join Game" }
 func (c ClientboundJoinGame) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeInt("entity ID", c.EntityID)
-	enc.writeBoolean("is hardcore", c.Hardcore)
-	enc.writeUbyte("gamemode", uint8(c.Gamemode))
-	enc.writeByte("previous gamemode", int8(c.PreviousGamemode))
-	enc.writeVarInt("world count", len(c.WorldNames))
+	enc.WriteInt("entity ID", c.EntityID)
+	enc.WriteBoolean("is hardcore", c.Hardcore)
+	enc.WriteUbyte("gamemode", uint8(c.Gamemode))
+	enc.WriteByte("previous gamemode", int8(c.PreviousGamemode))
+	enc.WriteVarInt("world count", len(c.WorldNames))
 	for i, worldName := range c.WorldNames {
-		enc.writeID("world names["+strconv.Itoa(i)+"]", worldName)
+		enc.WriteID("world names["+strconv.Itoa(i)+"]", worldName)
 	}
-	enc.writeNBT("dimension codec", c.DimensionCodec)
-	enc.writeNBT("dimension", c.Dimension)
-	enc.writeID("world name", c.WorldName)
-	enc.writeLong("hashed seed", c.HashedSeed)
-	enc.writeVarInt("max players", c.MaxPlayers)
-	enc.writeVarInt("view distance", c.ViewDistance)
-	enc.writeBoolean("reduced debug info", c.ReducedDebugInfo)
-	enc.writeBoolean("enable respawn screen", c.EnableRespawnScreen)
-	enc.writeBoolean("is debug", c.Debug)
-	enc.writeBoolean("is flat", c.Flat)
+	enc.WriteNBT("dimension codec", c.DimensionCodec)
+	enc.WriteNBT("dimension", c.Dimension)
+	enc.WriteID("world name", c.WorldName)
+	enc.WriteLong("hashed seed", c.HashedSeed)
+	enc.WriteVarInt("max players", c.MaxPlayers)
+	enc.WriteVarInt("view distance", c.ViewDistance)
+	enc.WriteBoolean("reduced debug info", c.ReducedDebugInfo)
+	enc.WriteBoolean("enable respawn screen", c.EnableRespawnScreen)
+	enc.WriteBoolean("is debug", c.Debug)
+	enc.WriteBoolean("is flat", c.Flat)
 
 	return
 }

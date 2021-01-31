@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ServerboundPlayerPositionAndLook{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ServerboundPlayerPositionAndLook{}))
 }
 
 type ServerboundPlayerPositionAndLook struct {
@@ -22,15 +22,15 @@ func (ServerboundPlayerPositionAndLook) Name() string { return "Player Position 
 func (s *ServerboundPlayerPositionAndLook) DecodeFrom(rd io.Reader) (err error) {
 	defer recoverAndSetErr(&err)
 
-	dec := decoder{rd}
+	dec := Decoder{rd}
 
-	s.X = dec.readDouble("x")
-	s.Y = dec.readDouble("y")
-	s.Z = dec.readDouble("z")
-	s.Yaw = dec.readFloat("yaw")
-	s.Pitch = dec.readFloat("pitch")
-	s.Flags = dec.readByte("flags")
-	s.TeleportID = dec.readVarInt("teleport id")
+	s.X = dec.ReadDouble("x")
+	s.Y = dec.ReadDouble("y")
+	s.Z = dec.ReadDouble("z")
+	s.Yaw = dec.ReadFloat("yaw")
+	s.Pitch = dec.ReadFloat("pitch")
+	s.Flags = dec.ReadByte("flags")
+	s.TeleportID = dec.ReadVarInt("teleport id")
 
 	return
 }

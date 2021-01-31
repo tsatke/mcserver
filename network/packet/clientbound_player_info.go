@@ -6,11 +6,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/tsatke/mcserver/network/packet/types"
+	"github.com/tsatke/mcserver/game/chat"
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundPlayerInfo{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundPlayerInfo{}))
 }
 
 type PlayerInfoPlayer struct {
@@ -18,10 +18,10 @@ type PlayerInfoPlayer struct {
 
 	Name           string
 	Properties     []PlayerInfoProperties
-	Gamemode       Gamemode
+	Gamemode       int
 	Ping           int
 	HasDisplayName bool
-	DisplayName    types.Chat
+	DisplayName    chat.Chat
 }
 
 type PlayerInfoProperties struct {
@@ -52,38 +52,38 @@ func (ClientboundPlayerInfo) Name() string { return "PlayerInfo" }
 func (c ClientboundPlayerInfo) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeVarInt("action", int(c.Action))
-	enc.writeVarInt("number of players", len(c.Players))
+	enc.WriteVarInt("action", int(c.Action))
+	enc.WriteVarInt("number of players", len(c.Players))
 	for _, player := range c.Players {
-		enc.writeUUID("uuid", player.UUID)
+		enc.WriteUUID("uuid", player.UUID)
 		switch c.Action {
 		case 0:
-			enc.writeString("name", player.Name)
-			enc.writeVarInt("number of properties", len(player.Properties))
+			enc.WriteString("name", player.Name)
+			enc.WriteVarInt("number of properties", len(player.Properties))
 			for _, property := range player.Properties {
-				enc.writeString("property name", property.Name)
-				enc.writeString("property value", property.Value)
-				enc.writeBoolean("is signed", property.Signed)
+				enc.WriteString("property name", property.Name)
+				enc.WriteString("property value", property.Value)
+				enc.WriteBoolean("is signed", property.Signed)
 				if property.Signed {
-					enc.writeString("signature", property.Signature)
+					enc.WriteString("signature", property.Signature)
 				}
 			}
-			enc.writeVarInt("gamemode", int(player.Gamemode))
-			enc.writeVarInt("ping", player.Ping)
-			enc.writeBoolean("has display name", player.HasDisplayName)
+			enc.WriteVarInt("gamemode", int(player.Gamemode))
+			enc.WriteVarInt("ping", player.Ping)
+			enc.WriteBoolean("has display name", player.HasDisplayName)
 			if player.HasDisplayName {
-				enc.writeChat("display name", player.DisplayName)
+				enc.WriteChat("display name", player.DisplayName)
 			}
 		case 1:
-			enc.writeVarInt("gamemode", int(player.Gamemode))
+			enc.WriteVarInt("gamemode", int(player.Gamemode))
 		case 2:
-			enc.writeVarInt("ping", player.Ping)
+			enc.WriteVarInt("ping", player.Ping)
 		case 3:
-			enc.writeBoolean("has display name", player.HasDisplayName)
+			enc.WriteBoolean("has display name", player.HasDisplayName)
 			if player.HasDisplayName {
-				enc.writeChat("display name", player.DisplayName)
+				enc.WriteChat("display name", player.DisplayName)
 			}
 		default:
 			// write no fields for 4

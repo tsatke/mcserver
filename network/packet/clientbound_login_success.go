@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	registerPacket(StateLogin, reflect.TypeOf(ClientboundLoginSuccess{}))
+	RegisterPacket(StateLogin, reflect.TypeOf(ClientboundLoginSuccess{}))
 }
 
 type ClientboundLoginSuccess struct {
@@ -22,10 +22,10 @@ func (ClientboundLoginSuccess) Name() string { return "Login Success" }
 func (c ClientboundLoginSuccess) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeUUID("uuid", c.UUID)
-	enc.writeString("username", c.Username)
+	enc.WriteUUID("uuid", c.UUID)
+	enc.WriteString("username", c.Username)
 
 	return
 }

@@ -4,15 +4,15 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/tsatke/mcserver/network/packet/types"
+	"github.com/tsatke/mcserver/game/chat"
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundDisconnectPlay{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundDisconnectPlay{}))
 }
 
 type ClientboundDisconnectPlay struct {
-	Reason types.Chat
+	Reason chat.Chat
 }
 
 func (ClientboundDisconnectPlay) ID() ID       { return IDClientboundDisconnectPlay }
@@ -21,9 +21,9 @@ func (ClientboundDisconnectPlay) Name() string { return "Disconnect (play)" }
 func (c ClientboundDisconnectPlay) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeChat("reason", c.Reason)
+	enc.WriteChat("reason", c.Reason)
 
 	return
 }

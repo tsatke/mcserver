@@ -6,20 +6,11 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundServerDifficulty{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundServerDifficulty{}))
 }
 
-type Difficulty uint8
-
-const (
-	DifficultyPeaceful Difficulty = iota
-	DifficultyEasy
-	DifficultyNormal
-	DifficultyHard
-)
-
 type ClientboundServerDifficulty struct {
-	Difficulty       Difficulty
+	Difficulty       byte
 	DifficultyLocked bool
 }
 
@@ -29,10 +20,10 @@ func (ClientboundServerDifficulty) Name() string { return "Server Difficulty" }
 func (c ClientboundServerDifficulty) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeUbyte("difficulty", uint8(c.Difficulty))
-	enc.writeBoolean("difficulty locked", c.DifficultyLocked)
+	enc.WriteUbyte("difficulty", c.Difficulty)
+	enc.WriteBoolean("difficulty locked", c.DifficultyLocked)
 
 	return
 }
