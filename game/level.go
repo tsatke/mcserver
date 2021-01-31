@@ -299,7 +299,7 @@ func stringToBool(target *bool) func(nbt.Tag) error {
 func stringToInt(target *int) func(nbt.Tag) error {
 	return func(tag nbt.Tag) error {
 		val := tag.(*nbt.String).Value
-		intVal, err := strconv.ParseInt(val, 10, 64)
+		intVal, err := strconv.ParseInt(val, 10, 32)
 		if err != nil {
 			return err
 		}
