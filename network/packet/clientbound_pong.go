@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerPacket(StateStatus, reflect.TypeOf(ClientboundPong{}))
+	RegisterPacket(StateStatus, reflect.TypeOf(ClientboundPong{}))
 }
 
 type ClientboundPong struct {
@@ -19,9 +19,9 @@ func (ClientboundPong) Name() string { return "Pong" }
 func (c ClientboundPong) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeLong("payload", c.Payload)
+	enc.WriteLong("payload", c.Payload)
 
 	return
 }

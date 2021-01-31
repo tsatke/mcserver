@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerPacket(StateHandshaking, reflect.TypeOf(ServerboundHandshake{}))
+	RegisterPacket(StateHandshaking, reflect.TypeOf(ServerboundHandshake{}))
 }
 
 //go:generate stringer -linecomment -output=serverbound_handshake_string.go -type=NextState
@@ -36,12 +36,19 @@ func (ServerboundHandshake) Name() string { return "Handshake" }
 func (s *ServerboundHandshake) DecodeFrom(rd io.Reader) (err error) {
 	defer recoverAndSetErr(&err)
 
-	dec := decoder{rd}
+	dec := Decoder{rd}
 
-	s.ProtocolVersion = dec.readVarInt("protocol version")
-	s.ServerAddress = dec.readString("server address")
-	s.ServerPort = int(dec.readUshort("server port"))
-	s.NextState = NextState(dec.readVarInt("next state"))
+	s.ProtocolVersion = dec.ReadVarInt("protocol version")
+	s.ServerAddress = dec.ReadString("server address")
+	s.ServerPort = int(dec.ReadUshort("server port"))
+	s.NextState = NextState(dec.ReadVarInt("next state"))
 
 	return
+}
+
+func (s ServerboundHandshake) Validate() error {
+	return multiValidate(
+		stringMaxLength("server address", 255, s.ServerAddress),
+		intWithinRange("next state", 1, 2, int(s.NextState)),
+	)
 }

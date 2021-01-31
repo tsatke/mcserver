@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundHeldItemChange{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundHeldItemChange{}))
 }
 
 type ClientboundHeldItemChange struct {
@@ -19,9 +19,9 @@ func (ClientboundHeldItemChange) Name() string { return "Held item change" }
 func (c ClientboundHeldItemChange) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeByte("slot", c.Slot)
+	enc.WriteByte("slot", c.Slot)
 
 	return
 }

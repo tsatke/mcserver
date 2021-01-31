@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundDeclareRecipes{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundDeclareRecipes{}))
 }
 
 type Recipe struct {
@@ -28,12 +28,12 @@ func (ClientboundDeclareRecipes) Name() string { return "Declare Recipes" }
 func (c ClientboundDeclareRecipes) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeVarInt("num recipes", len(c.Recipes))
+	enc.WriteVarInt("num recipes", len(c.Recipes))
 	for i, recipe := range c.Recipes {
-		enc.writeID("recipe["+strconv.Itoa(i)+"] type", recipe.Type)
-		enc.writeID("recipe["+strconv.Itoa(i)+"] id", recipe.ID)
+		enc.WriteID("recipe["+strconv.Itoa(i)+"] type", recipe.Type)
+		enc.WriteID("recipe["+strconv.Itoa(i)+"] id", recipe.ID)
 	}
 
 	return

@@ -1,97 +1,126 @@
 package packet
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"math"
 
 	"github.com/google/uuid"
 
 	"github.com/tsatke/mcserver/game/id"
-	"github.com/tsatke/mcserver/network/packet/types"
 )
 
-func recoverAndSetErr(err *error) {
-	if rec := recover(); rec != nil {
-		if recErr, ok := rec.(error); ok {
-			*err = recErr
-		} else {
-			panic(rec)
+type Decoder struct {
+	Rd io.Reader
+}
+
+func (d Decoder) ReadVarInt(fieldName string) int {
+	var res int32
+	var readCnt int
+
+	var buf [1]byte
+	for {
+		_, err := io.ReadFull(d.Rd, buf[:])
+		panicIffErr(fieldName, err)
+
+		val := buf[0] & (1<<7 - 1)
+		res |= int32(val) << (7 * readCnt)
+		readCnt++
+		if readCnt > 5 {
+			panicIffErr(fieldName, fmt.Errorf("VarInt too big"))
+		}
+
+		if buf[0]&(1<<7) == 0 {
+			break
 		}
 	}
+
+	return int(res)
 }
 
-func panicIffErr(fieldName string, err error) {
-	if err != nil {
-		panic(fmt.Errorf("%s: %w", fieldName, err))
+func (d Decoder) ReadString(fieldName string) string {
+	strLen := d.ReadVarInt(fieldName + " length")
+
+	/*
+		This way of reading the string may be slower than some of
+		the other methods seen in this file. However, this doesn't
+		allocate memory according to some bytes a user sends.
+		If we don't read a string like this, a user could send an
+		(invalid) string with a length of 2GiB, but no payload.
+		The reading will error out due to EOF, however, the 2GiB
+		would still have been allocated, which may cause the server
+		to lag pretty hard. This way, the user kind of has to prove
+		the length by actually sending the payload.
+	*/
+	var buf bytes.Buffer
+	n, err := buf.ReadFrom(io.LimitReader(d.Rd, int64(strLen)))
+	panicIffErr(fieldName, err)
+	if n != int64(strLen) {
+		panicIffErr(fieldName, fmt.Errorf("prefix indicated length of %d, but only got %d bytes", strLen, n))
 	}
+
+	return buf.String()
 }
 
-type decoder struct {
-	rd io.Reader
+func (d Decoder) ReadUbyte(fieldName string) byte {
+	var buf [ByteSize]byte
+	_, err := io.ReadFull(d.Rd, buf[:])
+	panicIffErr(fieldName, err)
+
+	return buf[0]
 }
 
-func (d decoder) readVarInt(fieldName string) int {
-	val := types.NewVarInt(0)
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return int(*val)
+func (d Decoder) ReadUshort(fieldName string) uint16 {
+	var buf [UnsignedShortSize]byte
+	_, err := io.ReadFull(d.Rd, buf[:])
+	panicIffErr(fieldName, err)
+
+	return ByteOrder.Uint16(buf[:])
 }
 
-func (d decoder) readString(fieldName string) string {
-	val := types.NewString("")
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return string(*val)
+func (d Decoder) ReadByte(fieldName string) int8 {
+	return int8(d.ReadUbyte(fieldName))
 }
 
-func (d decoder) readUbyte(fieldName string) byte {
-	val := types.NewUnsignedByte(0)
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return byte(*val)
+func (d Decoder) ReadBoolean(fieldName string) bool {
+	var buf [BooleanSize]byte
+	_, err := io.ReadFull(d.Rd, buf[:])
+	panicIffErr(fieldName, err)
+
+	return buf[0] == 1
 }
 
-func (d decoder) readUshort(fieldName string) uint16 {
-	val := types.NewUnsignedShort(0)
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return uint16(*val)
+func (d Decoder) ReadUUID(fieldName string) uuid.UUID {
+	var uuid uuid.UUID
+	_, err := io.ReadFull(d.Rd, uuid[:])
+	panicIffErr(fieldName, err)
+	return uuid
 }
 
-func (d decoder) readByte(fieldName string) int8 {
-	val := types.NewByte(0)
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return int8(*val)
+func (d Decoder) ReadLong(fieldName string) int64 {
+	var buf [LongSize]byte
+	_, err := io.ReadFull(d.Rd, buf[:])
+	panicIffErr(fieldName, err)
+	return int64(ByteOrder.Uint64(buf[:]))
 }
 
-func (d decoder) readBoolean(fieldName string) bool {
-	val := types.NewBoolean(false)
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return bool(*val)
+func (d Decoder) ReadDouble(fieldName string) float64 {
+	var buf [DoubleSize]byte
+	_, err := io.ReadFull(d.Rd, buf[:])
+	panicIffErr(fieldName, err)
+
+	return math.Float64frombits(ByteOrder.Uint64(buf[:]))
 }
 
-func (d decoder) readLong(fieldName string) int64 {
-	val := types.NewLong(0)
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return int64(*val)
+func (d Decoder) ReadFloat(fieldName string) float32 {
+	var buf [FloatSize]byte
+	_, err := io.ReadFull(d.Rd, buf[:])
+	panicIffErr(fieldName, err)
+
+	return math.Float32frombits(ByteOrder.Uint32(buf[:]))
 }
 
-func (d decoder) readDouble(fieldName string) float64 {
-	val := types.NewDouble(0)
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return float64(*val)
-}
-
-func (d decoder) readFloat(fieldName string) float32 {
-	val := types.NewFloat(0)
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return float32(*val)
-}
-
-func (d decoder) readUUID(fieldName string) uuid.UUID {
-	val := types.NewUUID([16]byte{})
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return uuid.UUID(*val)
-}
-
-func (d decoder) readID(fieldName string) id.ID {
-	val := types.String("")
-	panicIffErr(fieldName, val.DecodeFrom(d.rd))
-	return id.ParseID(string(val))
+func (d Decoder) ReadID(fieldName string) id.ID {
+	return id.ParseID(d.ReadString(fieldName))
 }

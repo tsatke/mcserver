@@ -1,10 +1,4 @@
-package types
-
-import (
-	"encoding/json"
-	"fmt"
-	"io"
-)
+package chat
 
 type (
 	Chat struct {
@@ -22,22 +16,3 @@ type (
 		Insertion     string `json:"insertion,omitempty"`
 	}
 )
-
-func (ch *Chat) DecodeFrom(rd io.Reader) error {
-	strVal := NewString("")
-	if err := strVal.DecodeFrom(rd); err != nil {
-		return err
-	}
-	if err := json.Unmarshal([]byte(*strVal), ch); err != nil {
-		return fmt.Errorf("unmarshal: %w", err)
-	}
-	return nil
-}
-
-func (ch Chat) EncodeInto(w io.Writer) error {
-	data, err := json.Marshal(ch)
-	if err != nil {
-		return fmt.Errorf("marshal: %w", err)
-	}
-	return NewString(string(data)).EncodeInto(w)
-}

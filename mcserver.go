@@ -10,9 +10,9 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/tsatke/mcserver/game"
+	"github.com/tsatke/mcserver/game/chat"
 	"github.com/tsatke/mcserver/network"
 	"github.com/tsatke/mcserver/network/packet"
-	"github.com/tsatke/mcserver/network/packet/types"
 )
 
 const (
@@ -152,11 +152,11 @@ func (s *MCServer) handleStatusRequest(conn *network.Conn) {
 				Online: s.game.AmountOfConnectedPlayers(),
 				Sample: []packet.ResponsePlayersSample{},
 			},
-			Description: types.Chat{
-				ChatFragment: types.ChatFragment{
+			Description: chat.Chat{
+				ChatFragment: chat.ChatFragment{
 					Text: "Timi loves Tanni ",
 				},
-				Extra: []types.ChatFragment{
+				Extra: []chat.ChatFragment{
 					{
 						Text:  "❤",
 						Color: "red",

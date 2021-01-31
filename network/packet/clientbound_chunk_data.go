@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundChunkData{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundChunkData{}))
 }
 
 type ClientboundChunkData struct {
@@ -36,24 +36,24 @@ func (ClientboundChunkData) Name() string { return "Chunk Data" }
 func (c ClientboundChunkData) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeInt("chunk x", int32(c.ChunkPos.X))
-	enc.writeInt("chunk z", int32(c.ChunkPos.Z))
-	enc.writeBoolean("full chunk", c.FullChunk)
-	enc.writeVarInt("primary bit mask", int(c.PrimaryBitMask))
-	enc.writeNBT("heightmaps", c.Heightmaps)
+	enc.WriteInt("chunk x", int32(c.ChunkPos.X))
+	enc.WriteInt("chunk z", int32(c.ChunkPos.Z))
+	enc.WriteBoolean("full chunk", c.FullChunk)
+	enc.WriteVarInt("primary bit mask", int(c.PrimaryBitMask))
+	enc.WriteNBT("heightmaps", c.Heightmaps)
 	if c.FullChunk {
-		enc.writeVarInt("biomes length", len(c.Biomes))
+		enc.WriteVarInt("biomes length", len(c.Biomes))
 		for _, biome := range c.Biomes {
-			enc.writeVarInt("biomes", biome)
+			enc.WriteVarInt("biomes", biome)
 		}
 	}
-	enc.writeVarInt("size", len(c.Data))
-	enc.writeByteArray("data", c.Data)
-	enc.writeVarInt("number of block entities", len(c.BlockEntities))
+	enc.WriteVarInt("size", len(c.Data))
+	enc.WriteByteArray("data", c.Data)
+	enc.WriteVarInt("number of block entities", len(c.BlockEntities))
 	for _, entity := range c.BlockEntities {
-		enc.writeNBT("block entity", entity)
+		enc.WriteNBT("block entity", entity)
 	}
 
 	return

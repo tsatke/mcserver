@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	registerPacket(StatePlay, reflect.TypeOf(ClientboundUpdateLight{}))
+	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundUpdateLight{}))
 }
 
 type ClientboundUpdateLight struct {
@@ -30,15 +30,15 @@ func (ClientboundUpdateLight) Name() string { return "Update Light" }
 func (c ClientboundUpdateLight) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
-	enc := encoder{w}
+	enc := Encoder{w}
 
-	enc.writeInt("chunk x", int32(c.ChunkPos.X))
-	enc.writeInt("chunk z", int32(c.ChunkPos.Z))
-	enc.writeBoolean("trust edges", c.TrustEdges)
-	enc.writeVarInt("sky light mask", c.SkyLightMask)
-	enc.writeVarInt("block light mask", c.BlockLightMask)
-	enc.writeVarInt("empty sky light mask", c.EmptySkyLightMask)
-	enc.writeVarInt("empty block light mask", c.EmptyBlockLightMask)
+	enc.WriteInt("chunk x", int32(c.ChunkPos.X))
+	enc.WriteInt("chunk z", int32(c.ChunkPos.Z))
+	enc.WriteBoolean("trust edges", c.TrustEdges)
+	enc.WriteVarInt("sky light mask", c.SkyLightMask)
+	enc.WriteVarInt("block light mask", c.BlockLightMask)
+	enc.WriteVarInt("empty sky light mask", c.EmptySkyLightMask)
+	enc.WriteVarInt("empty block light mask", c.EmptyBlockLightMask)
 	skyLightMaskHiCount := bits.OnesCount(uint(c.SkyLightMask))
 	if len(c.SkyLightArrays) != skyLightMaskHiCount {
 		return fmt.Errorf("skyLightMaskHiCount does not match the amount of arrays")
@@ -48,12 +48,12 @@ func (c ClientboundUpdateLight) EncodeInto(w io.Writer) (err error) {
 		return fmt.Errorf("blockLightMaskHiCount does not match the amount of arrays")
 	}
 	for i := range c.SkyLightArrays {
-		enc.writeVarInt("length", len(c.SkyLightArrays[i]))
-		enc.writeByteArray("sky light array", c.SkyLightArrays[i][:])
+		enc.WriteVarInt("length", len(c.SkyLightArrays[i]))
+		enc.WriteByteArray("sky light array", c.SkyLightArrays[i][:])
 	}
 	for i := range c.BlockLightArrays {
-		enc.writeVarInt("length", len(c.BlockLightArrays[i]))
-		enc.writeByteArray("block light array", c.BlockLightArrays[i][:])
+		enc.WriteVarInt("length", len(c.BlockLightArrays[i]))
+		enc.WriteByteArray("block light array", c.BlockLightArrays[i][:])
 	}
 
 	return
