@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundEntityStatus{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundEntityStatus{}))
 }
 
 type ClientboundEntityStatus struct {

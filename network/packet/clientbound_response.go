@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StateStatus, reflect.TypeOf(ClientboundResponse{}))
+	RegisterPacket(PhaseStatus, reflect.TypeOf(ClientboundResponse{}))
 }
 
 type (

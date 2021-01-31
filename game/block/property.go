@@ -2,8 +2,6 @@ package block
 
 import "reflect"
 
-//go:generate stringer -type=Property
-
 type PropertyDescriptor struct {
 	Name          string
 	Type          reflect.Type

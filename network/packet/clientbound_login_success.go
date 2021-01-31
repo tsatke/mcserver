@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StateLogin, reflect.TypeOf(ClientboundLoginSuccess{}))
+	RegisterPacket(PhaseLogin, reflect.TypeOf(ClientboundLoginSuccess{}))
 }
 
 type ClientboundLoginSuccess struct {

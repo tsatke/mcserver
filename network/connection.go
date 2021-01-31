@@ -14,7 +14,7 @@ import (
 type Conn struct {
 	log        zerolog.Logger
 	underlying net.Conn
-	state      packet.State
+	state      packet.Phase
 	closed     bool
 }
 
@@ -22,11 +22,11 @@ func NewConn(log zerolog.Logger, underlying net.Conn) *Conn {
 	return &Conn{
 		log:        log,
 		underlying: underlying,
-		state:      packet.StateHandshaking,
+		state:      packet.PhaseHandshaking,
 	}
 }
 
-func (c Conn) State() packet.State {
+func (c Conn) State() packet.Phase {
 	return c.state
 }
 
@@ -34,7 +34,7 @@ func (c Conn) IP() net.IP {
 	return c.underlying.RemoteAddr().(*net.TCPAddr).IP
 }
 
-func (c *Conn) SetState(state packet.State) {
+func (c *Conn) SetState(state packet.Phase) {
 	c.state = state
 }
 

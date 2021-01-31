@@ -118,10 +118,10 @@ func (s *MCServer) handleRequest(c net.Conn) {
 
 	switch handshake.NextState {
 	case packet.NextStateStatus:
-		conn.SetState(packet.StateStatus)
+		conn.SetState(packet.PhaseStatus)
 		s.handleStatusRequest(conn)
 	case packet.NextStateLogin:
-		conn.SetState(packet.StateLogin)
+		conn.SetState(packet.PhaseLogin)
 		s.handleLoginRequest(conn)
 	default:
 		s.log.Error().
@@ -241,7 +241,7 @@ func (s *MCServer) handleLoginRequest(conn *network.Conn) {
 		return
 	}
 
-	conn.SetState(packet.StatePlay)
+	conn.SetState(packet.PhasePlay)
 	s.game.AddPlayer(game.NewPlayer(uid, username, conn))
 	// game handles the connection as of here, nothing more to do
 }

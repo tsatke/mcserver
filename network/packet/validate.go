@@ -6,7 +6,11 @@ import (
 	"unicode/utf8"
 )
 
+// Validator describes a serverbound  packet that can validate its own fields
+// for invalid values. Validate will be called by Decode if the decoded packet
+// implements this interface.
 type Validator interface {
+	Serverbound
 	Validate() error
 }
 

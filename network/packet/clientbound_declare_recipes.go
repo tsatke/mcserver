@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundDeclareRecipes{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundDeclareRecipes{}))
 }
 
 type Recipe struct {

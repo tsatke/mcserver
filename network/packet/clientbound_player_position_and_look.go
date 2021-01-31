@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundPlayerPositionAndLook{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundPlayerPositionAndLook{}))
 }
 
 type ClientboundPlayerPositionAndLook struct {

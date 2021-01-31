@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StateStatus, reflect.TypeOf(ClientboundPong{}))
+	RegisterPacket(PhaseStatus, reflect.TypeOf(ClientboundPong{}))
 }
 
 type ClientboundPong struct {

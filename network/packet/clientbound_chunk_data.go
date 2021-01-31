@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundChunkData{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundChunkData{}))
 }
 
 type ClientboundChunkData struct {

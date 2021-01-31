@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ServerboundClientSettings{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ServerboundClientSettings{}))
 }
 
 type ChatMode int

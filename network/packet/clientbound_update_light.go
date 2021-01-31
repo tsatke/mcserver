@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundUpdateLight{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundUpdateLight{}))
 }
 
 type ClientboundUpdateLight struct {

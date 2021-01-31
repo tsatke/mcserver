@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ServerboundPluginMessage{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ServerboundPluginMessage{}))
 }
 
 type ServerboundPluginMessage struct {

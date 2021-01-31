@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundJoinGame{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundJoinGame{}))
 }
 
 type ClientboundJoinGame struct {

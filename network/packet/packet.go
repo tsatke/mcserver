@@ -9,35 +9,45 @@ import (
 
 var (
 	packetInterfaceType    = reflect.TypeOf((*Packet)(nil)).Elem()
-	serverboundPacketTypes = make(map[State]map[ID]reflect.Type)
-	clientboundPacketTypes = make(map[State]map[ID]reflect.Type)
+	serverboundPacketTypes = make(map[Phase]map[ID]reflect.Type)
+	clientboundPacketTypes = make(map[Phase]map[ID]reflect.Type)
 )
 
-func RegisterPacket(state State, typ reflect.Type) {
+// RegisterPacket will associate the given state with the given type.
+// The given type must implement Packet and either Serverbound
+// or Clientbound. If a packet implements both (which wouldn't make much
+// sense, but it's possible), Serverbound takes precedence.
+//
+// Registering a packet with a state will allow Decode to automatically
+// create and decode an incoming packet depending on a Phase and the
+// decoded packet ID.
+func RegisterPacket(state Phase, typ reflect.Type) {
 	if !typ.Implements(packetInterfaceType) {
 		panic(fmt.Sprintf("%s does not implement the Packet interface", typ.Name()))
 	}
 	created := reflect.New(typ).Interface()
 	id := created.(Packet).ID()
+	var target map[Phase]map[ID]reflect.Type
 	if _, ok := created.(Serverbound); ok {
+		// initialize state map if necessary
 		if serverboundPacketTypes[state] == nil {
 			serverboundPacketTypes[state] = make(map[ID]reflect.Type)
 		}
-		if serverboundPacketTypes[state][id] != nil {
-			panic(fmt.Sprintf("already registered serverbound packet %T in state %s", created, state))
-		}
-		serverboundPacketTypes[state][id] = typ
+		target = serverboundPacketTypes
 	} else if _, ok := created.(Clientbound); ok {
+		// initialize state map if necessary
 		if clientboundPacketTypes[state] == nil {
 			clientboundPacketTypes[state] = make(map[ID]reflect.Type)
 		}
-		if clientboundPacketTypes[state][id] != nil {
-			panic(fmt.Sprintf("already registered clientbound packet %T in state %s", created, state))
-		}
-		clientboundPacketTypes[state][id] = typ
+		target = clientboundPacketTypes
 	} else {
 		panic(fmt.Sprintf("%s is a packet, but does neither implement Serverbound nor Clientbound", typ.Name()))
 	}
+
+	if target[state][id] != nil {
+		panic(fmt.Sprintf("already registered packet %T in state %s", created, state))
+	}
+	target[state][id] = typ
 }
 
 // Packet is a packet that can either be sent to a client or the server.
@@ -48,11 +58,9 @@ type Packet interface {
 
 // Serverbound describes a packet that was sent from the client to the server.
 // Every Serverbound packet has a DecodeFrom method that fills its values with
-// data from a reader. The reader will always be uncompressed. Other than that,
-// there are no guarantees about the reader. The packet implementation must make
-// sure that the stream is read from correctly. The reader might be the network
-// connection itself, so make sure to check how many bytes are actually read with
-// each read.
+// data from a reader. The reader will always be uncompressed. The reader will
+// not contain the packet length and/or ID. The reader will return EOF if the
+// packet reaches an end. That means, that the reader can not over-read.
 type Serverbound interface {
 	Packet
 	// DecodeFrom will read fields according to this packet from the given reader.
@@ -62,12 +70,17 @@ type Serverbound interface {
 	DecodeFrom(io.Reader) error
 }
 
+// Clientbound describes a packet that can be sent from the server to a client.
+// Each Clientbound packet has an EncodeInto method that will encode only
+// the packet fields onto the passed in writer.
 type Clientbound interface {
 	Packet
 	// EncodeInto will only write the packet fields onto the given writer, NOT the length and/or ID.
 	EncodeInto(io.Writer) error
 }
 
+// Encode will write the given packet onto the given writer. As opposed to the
+// Clientbound.EncodeInto method, this will also write the packet length and ID.
 func Encode(pkg Clientbound, w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
@@ -82,7 +95,9 @@ func Encode(pkg Clientbound, w io.Writer) (err error) {
 	return
 }
 
-func Decode(rd io.Reader, state State) (p Serverbound, err error) {
+// Decode decodes a Serverbound packet from the given reader, depending on the
+// given state.
+func Decode(rd io.Reader, state Phase) (p Serverbound, err error) {
 	defer recoverAndSetErr(&err)
 
 	dec := Decoder{rd}
@@ -93,7 +108,7 @@ func Decode(rd io.Reader, state State) (p Serverbound, err error) {
 	payloadReader := io.LimitReader(rd, int64(payloadLength))
 	packetType := serverboundPacketTypes[state][packetID]
 	if packetType == nil {
-		return nil, fmt.Errorf("unknown ID %s in State %s", packetID, state)
+		return nil, fmt.Errorf("unknown ID %s in Phase %s", packetID, state)
 	}
 	packetInterface := reflect.New(packetType).Interface()
 	packet := packetInterface.(Serverbound)

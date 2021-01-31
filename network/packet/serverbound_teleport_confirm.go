@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ServerboundTeleportConfirm{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ServerboundTeleportConfirm{}))
 }
 
 type ServerboundTeleportConfirm struct {

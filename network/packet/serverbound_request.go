@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StateStatus, reflect.TypeOf(ServerboundRequest{}))
+	RegisterPacket(PhaseStatus, reflect.TypeOf(ServerboundRequest{}))
 }
 
 type ServerboundRequest struct {

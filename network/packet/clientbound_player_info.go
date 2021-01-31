@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundPlayerInfo{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundPlayerInfo{}))
 }
 
 type PlayerInfoPlayer struct {

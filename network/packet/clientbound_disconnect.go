@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundDisconnectPlay{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundDisconnectPlay{}))
 }
 
 type ClientboundDisconnectPlay struct {

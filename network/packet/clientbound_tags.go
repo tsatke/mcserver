@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	RegisterPacket(StatePlay, reflect.TypeOf(ClientboundTags{}))
+	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundTags{}))
 }
 
 type Tag struct {
