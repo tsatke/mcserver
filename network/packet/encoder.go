@@ -31,7 +31,7 @@ func (e Encoder) WriteVarInt(fieldName string, val int) {
 			break
 		}
 	}
-	_write(e.W, fieldName, buf[:])
+	_write(e.W, fieldName, buf)
 }
 
 func (e Encoder) WriteInt(fieldName string, val int32) {
