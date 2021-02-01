@@ -54,7 +54,9 @@ func (suite *ServerSuite) SetupTest() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		suite.NoError(srv.Start(ctx))
+		if err := srv.Start(ctx); err != nil {
+			panic(err)
+		}
 	}()
 	suite.cancelFn = cancel
 }
