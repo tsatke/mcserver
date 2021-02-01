@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math"
-	"strconv"
 	"testing"
 
 	"github.com/google/uuid"
@@ -54,15 +53,12 @@ func (suite *EncoderSuite) TestEncoder_WriteBoolean() {
 
 func (suite *EncoderSuite) TestEncoder_WriteByte() {
 	for i := -130; i < 130; i++ { // few over and underflows
-		suite.Run("byte="+strconv.Itoa(i), func() {
-			testFn := func() {
-				var buf bytes.Buffer
-				enc := Encoder{&buf}
+		suite.NotPanics(func() {
+			var buf bytes.Buffer
+			enc := Encoder{&buf}
 
-				enc.WriteByte("field", int8(i))
-				suite.EqualValues([]byte{byte(i)}, buf.Bytes())
-			}
-			suite.NotPanics(testFn)
+			enc.WriteByte("field", int8(i))
+			suite.EqualValues([]byte{byte(i)}, buf.Bytes())
 		})
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/afero"
 
+	"github.com/tsatke/mcserver/config"
 	"github.com/tsatke/mcserver/game"
 	"github.com/tsatke/mcserver/game/chat"
 	"github.com/tsatke/mcserver/network"
@@ -25,14 +26,30 @@ type MCServer struct {
 	addr     string
 	listener net.Listener
 
-	game *game.Game
+	game   *game.Game
+	config config.Config
 }
 
-func New(log zerolog.Logger, addr string) *MCServer {
-	return &MCServer{
-		log:  log,
-		addr: addr,
+func New(log zerolog.Logger, config config.Config, opts ...Option) (*MCServer, error) {
+	srv := &MCServer{
+		log:    log,
+		addr:   config.ServerAddr(),
+		config: config,
 	}
+
+	for _, opt := range opts {
+		opt(srv)
+	}
+
+	if srv.listener == nil {
+		lis, err := net.Listen("tcp", srv.addr)
+		if err != nil {
+			return nil, fmt.Errorf("listen: %w", err)
+		}
+		srv.listener = lis
+	}
+
+	return srv, nil
 }
 
 func (s *MCServer) Start(ctx context.Context) error {
@@ -40,15 +57,9 @@ func (s *MCServer) Start(ctx context.Context) error {
 		Msg("preparing game")
 	s.prepareGame(ctx)
 
-	lis, err := net.Listen("tcp", s.addr)
-	if err != nil {
-		return fmt.Errorf("listen: %w", err)
-	}
-	s.listener = lis
 	s.log.Info().
 		Str("addr", s.addr).
 		Msg("waiting for incoming connection")
-
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
@@ -77,7 +88,7 @@ func (s *MCServer) prepareGame(ctx context.Context) {
 		s.log.With().
 			Str("component", "game").
 			Logger(),
-		afero.NewBasePathFs(afero.NewOsFs(), "world"),
+		afero.NewBasePathFs(afero.NewOsFs(), s.config.GameWorld()),
 	)
 	s.game.Start(ctx)
 	select {
