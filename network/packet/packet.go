@@ -14,15 +14,15 @@ var (
 	clientboundPacketTypes = make(map[Phase]map[ID]reflect.Type)
 )
 
-// RegisterPacket will associate the given state with the given type.
+// RegisterPacket will associate a given type with a given Phase..
 // The given type must implement Packet and either Serverbound
 // or Clientbound. If a packet implements both (which wouldn't make much
 // sense, but it's possible), Serverbound takes precedence.
 //
-// Registering a packet with a state will allow Decode to automatically
+// Registering a packet with a Phase will allow Decode to automatically
 // create and decode an incoming packet depending on a Phase and the
 // decoded packet ID.
-func RegisterPacket(state Phase, typ reflect.Type) {
+func RegisterPacket(phase Phase, typ reflect.Type) {
 	if !typ.Implements(packetInterfaceType) {
 		panic(fmt.Sprintf("%s does not implement the Packet interface", typ.Name()))
 	}
@@ -30,25 +30,25 @@ func RegisterPacket(state Phase, typ reflect.Type) {
 	id := created.(Packet).ID()
 	var target map[Phase]map[ID]reflect.Type
 	if _, ok := created.(Serverbound); ok {
-		// initialize state map if necessary
-		if serverboundPacketTypes[state] == nil {
-			serverboundPacketTypes[state] = make(map[ID]reflect.Type)
+		// initialize phase map if necessary
+		if serverboundPacketTypes[phase] == nil {
+			serverboundPacketTypes[phase] = make(map[ID]reflect.Type)
 		}
 		target = serverboundPacketTypes
 	} else if _, ok := created.(Clientbound); ok {
-		// initialize state map if necessary
-		if clientboundPacketTypes[state] == nil {
-			clientboundPacketTypes[state] = make(map[ID]reflect.Type)
+		// initialize phase map if necessary
+		if clientboundPacketTypes[phase] == nil {
+			clientboundPacketTypes[phase] = make(map[ID]reflect.Type)
 		}
 		target = clientboundPacketTypes
 	} else {
 		panic(fmt.Sprintf("%s is a packet, but does neither implement Serverbound nor Clientbound", typ.Name()))
 	}
 
-	if target[state][id] != nil {
-		panic(fmt.Sprintf("already registered packet %T in state %s", created, state))
+	if target[phase][id] != nil {
+		panic(fmt.Sprintf("already registered packet %T in phase %s", created, phase))
 	}
-	target[state][id] = typ
+	target[phase][id] = typ
 }
 
 // Packet is a packet that can either be sent to a client or the server.
@@ -97,8 +97,8 @@ func Encode(pkg Clientbound, w io.Writer) (err error) {
 }
 
 // Decode decodes a Serverbound packet from the given reader, depending on the
-// given state.
-func Decode(rd io.Reader, state Phase) (p Serverbound, err error) {
+// given phase.
+func Decode(rd io.Reader, phase Phase) (p Serverbound, err error) {
 	defer recoverAndSetErr(&err)
 
 	dec := Decoder{rd}
@@ -107,10 +107,10 @@ func Decode(rd io.Reader, state Phase) (p Serverbound, err error) {
 	packetID := ID(dec.ReadVarInt("packet ID"))
 	payloadLength := packetLen - 1 /* packetID.Len(), which seems to always be 1 */
 	payloadReader := io.LimitReader(rd, int64(payloadLength))
-	packetType := serverboundPacketTypes[state][packetID]
+	packetType := serverboundPacketTypes[phase][packetID]
 	if packetType == nil {
 		_, _ = io.CopyN(ioutil.Discard, rd, int64(payloadLength)) // discard remaining bytes of the packet
-		return nil, fmt.Errorf("unknown ID %s in Phase %s, discarding", packetID, state)
+		return nil, fmt.Errorf("unknown ID %s in Phase %s, discarding", packetID, phase)
 	}
 	packetInterface := reflect.New(packetType).Interface()
 	packet := packetInterface.(Serverbound)
