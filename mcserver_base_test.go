@@ -3,10 +3,13 @@ package mcserver
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net"
 	"os"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
@@ -25,10 +28,13 @@ func TestServerSuite(t *testing.T) {
 type ServerSuite struct {
 	suite.Suite
 
-	listener  net.Listener
-	openConns []net.Conn
-	server    *MCServer
-	cancelFn  func()
+	listener net.Listener
+
+	openConnsLock sync.Mutex
+	openConns     []net.Conn
+
+	server   *MCServer
+	cancelFn func()
 }
 
 func testConfig() config.Config {
@@ -45,7 +51,8 @@ func (suite *ServerSuite) SetupTest() {
 	suite.listener = lis
 
 	srv, err := New(
-		zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).With().Timestamp().Logger(),
+		zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.InfoLevel).With().Timestamp().Logger(),
+		// zerolog.Nop(),
 		testConfig(),
 		WithListener(lis),
 	)
@@ -85,7 +92,11 @@ func (suite *ServerSuite) TearDownTest() {
 func (suite *ServerSuite) DialServer() net.Conn {
 	conn, err := net.Dial("tcp", suite.listener.Addr().String())
 	suite.Require().NoError(err)
+
+	suite.openConnsLock.Lock()
 	suite.openConns = append(suite.openConns, conn)
+	suite.openConnsLock.Unlock()
+
 	return conn
 }
 
@@ -106,20 +117,51 @@ func (suite *ServerSuite) DoSend(to io.Writer, id packet.ID, fn func(packet.Enco
 	suite.NoError(err)
 }
 
+// DoReceive attempts to receive a message from the server. It attempts to read and
+// call the given function with a timeout of 5 seconds.
 func (suite *ServerSuite) DoReceive(from io.Reader, fn func(packet.ID, packet.Decoder)) {
-	dec := packet.Decoder{from}
-	packetLength := dec.ReadVarInt("packet length")
-	packetID := packet.ID(dec.ReadVarInt("packet id"))
-	rd := io.LimitReader(from, int64(packetLength-1))
-	suite.NotPanics(func() {
+	ch := make(chan struct{})
+	var err error
+	go func() {
+		defer func() {
+			if rec := recover(); rec != nil {
+				if recErr, ok := rec.(error); ok {
+					err = recErr
+				} else {
+					panic(rec)
+				}
+			}
+			close(ch)
+		}()
+		dec := packet.Decoder{from}
+		packetLength := dec.ReadVarInt("packet length")
+		packetID := packet.ID(dec.ReadVarInt("packet id"))
+		rd := io.LimitReader(from, int64(packetLength-1))
+
 		fn(packetID, packet.Decoder{rd})
-	})
+	}()
+
+	select {
+	case <-ch:
+	case <-time.After(5 * time.Second):
+		/*
+			Might happen because the connection is still open but the server didn't
+			send a message. This can not happen when the connection is closed; then
+			io.ClosedOrEOF will be returned.
+		*/
+		suite.FailNow("timeout while receiving")
+	}
+	suite.NoError(err)
 }
 
-// EOF assumes that the given reader is closed, and will fail the test if it is not.
+// ClosedOrEOF assumes that the given reader is closed, and will fail the test if it is not.
 // A reader is considered closed if a read returns an io.EOF. Please note that this
 // method reads one byte from the given reader.
-func (suite *ServerSuite) EOF(rd io.Reader) {
+func (suite *ServerSuite) ClosedOrEOF(rd io.Reader) {
 	_, err := rd.Read([]byte{0})
-	suite.ErrorIs(err, io.EOF)
+	if !errors.Is(err, io.EOF) {
+		if netErr, ok := err.(net.Error); !ok && netErr.Temporary() {
+			suite.Fail("error is not not EOF or closed")
+		}
+	}
 }
