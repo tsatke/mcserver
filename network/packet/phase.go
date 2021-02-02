@@ -1,6 +1,6 @@
 package packet
 
-//go:generate stringer -linecomment -trimprefix=Phase -type=Phase
+//go:generate stringer -trimprefix=Phase -type=Phase
 
 type Phase uint8
 
