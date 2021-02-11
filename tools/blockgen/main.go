@@ -65,7 +65,7 @@ func main() {
 		}).
 		Parse(templateText))
 
-	f, err := os.OpenFile(outFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666)
+	f, err := os.OpenFile(outFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0666) // #nosec
 	if err != nil {
 		panic(err)
 	}
