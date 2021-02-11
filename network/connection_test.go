@@ -24,10 +24,13 @@ func (suite *ConnectionSuite) TestWritePacket() {
 	source := NewConn(zerolog.Nop(), net1)
 	uuid := uuid.New()
 	go func() {
-		suite.NoError(source.WritePacket(packet.ClientboundLoginSuccess{
+		err := source.WritePacket(packet.ClientboundLoginSuccess{
 			UUID:     uuid,
 			Username: "aUsername",
-		}))
+		})
+		if err != nil {
+			panic(err)
+		}
 	}()
 	defer func() {
 		rec := recover()
