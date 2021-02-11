@@ -51,7 +51,7 @@ func main() {
 	flag.Parse()
 
 	var definition map[string]Block
-	data, err := ioutil.ReadFile(inFile)
+	data, err := ioutil.ReadFile(inFile) // #nosec
 	if err != nil {
 		panic(err)
 	}
