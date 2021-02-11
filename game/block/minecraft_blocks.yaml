@@ -1,0 +1,60 @@
+Air:
+  id: minecraft:air
+CaveAir:
+  id: minecraft:cave_air
+VoidAir:
+  id: minecraft:void_air
+Stone:
+  id: minecraft:stone
+Granite:
+  id: minecraft:granite
+Diorite:
+  id: minecraft:diorite
+Andesite:
+  id: minecraft:andesite
+GrassBlock:
+  id: minecraft:grass_block
+Dirt:
+  id: minecraft:dirt
+Cobblestone:
+  id: minecraft:cobblestone
+OakPlanks:
+  id: minecraft:oak_planks
+Bedrock:
+  id: minecraft:bedrock
+Gravel:
+  id: minecraft:gravel
+IronOre:
+  id: minecraft:iron_ore
+CoalOre:
+  id: minecraft:coal_ore
+LapisOre:
+  id: minecraft:lapis_ore
+Cobweb:
+  id: minecraft:cobweb
+RedstoneOre:
+  id: minecraft:redstone_ore
+Water:
+  id: minecraft:water
+OakFence:
+  id: minecraft:oak_fence
+Rail:
+  id: minecraft:rail
+GoldOre:
+  id: minecraft:gold_ore
+Clay:
+  id: minecraft:clay
+Seagrass:
+  id: minecraft:seagrass
+TallSeagrass:
+  id: minecraft:tall_seagrass
+LilyPad:
+  id: minecraft:lily_pad
+Vine:
+  id: minecraft:vine
+Grass:
+  id: minecraft:grass
+OakLog:
+  id: minecraft:oak_log
+OakLeaves:
+  id: minecraft:oak_leaves
