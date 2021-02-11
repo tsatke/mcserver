@@ -47,10 +47,6 @@ func (suite *ConnectionSuite) TestReadPacket() {
 	net1, net2 := net.Pipe()
 	sink := NewConn(zerolog.Nop(), net1)
 	go func() {
-		defer func() {
-			rec := recover()
-			suite.Nilf(rec, "%v", rec)
-		}()
 		enc := packet.Encoder{net2}
 		enc.WriteVarInt("packet length", 19) // remember to change this when you change the values below
 		enc.WriteVarInt("packet id", int(packet.IDServerboundHandshake))
