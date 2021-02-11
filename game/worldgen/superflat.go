@@ -22,13 +22,13 @@ func NewSuperflatGenerator(log zerolog.Logger, seed int64) *SuperflatGenerator {
 		seed: seed,
 	}
 	for i := range gen.blockMap {
-		gen.blockMap[i] = block.Air
+		gen.blockMap[i] = airBlock
 	}
-	gen.blockMap[0] = block.Bedrock
-	gen.blockMap[1] = block.Stone
-	gen.blockMap[2] = block.Stone
-	gen.blockMap[3] = block.Stone
-	gen.blockMap[4] = block.Grass
+	gen.blockMap[0] = bedrockBlock
+	gen.blockMap[1] = stoneBlock
+	gen.blockMap[2] = stoneBlock
+	gen.blockMap[3] = stoneBlock
+	gen.blockMap[4] = grassBlock
 	return gen
 }
 

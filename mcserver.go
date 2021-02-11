@@ -55,7 +55,9 @@ func New(log zerolog.Logger, config config.Config, opts ...Option) (*MCServer, e
 func (s *MCServer) Start(ctx context.Context) error {
 	s.log.Info().
 		Msg("preparing game")
-	s.prepareGame(ctx)
+	if err := s.prepareGame(ctx); err != nil {
+		return fmt.Errorf("prepare game: %w", err)
+	}
 
 	s.log.Info().
 		Str("addr", s.addr).
@@ -83,14 +85,19 @@ func (s *MCServer) Stop() {
 	_ = s.listener.Close()
 }
 
-func (s *MCServer) prepareGame(ctx context.Context) {
-	s.game = game.New(
+func (s *MCServer) prepareGame(ctx context.Context) error {
+	g, err := game.New(
 		s.log.With().
 			Str("component", "game").
 			Logger(),
 		afero.NewBasePathFs(afero.NewOsFs(), s.config.GameWorld()),
 	)
-	s.game.Start(ctx)
+	if err != nil {
+		return fmt.Errorf("create game: %w", err)
+	}
+
+	s.game = g
+	go s.game.Start(ctx)
 	select {
 	case <-ctx.Done():
 		s.log.Info().
@@ -99,6 +106,7 @@ func (s *MCServer) prepareGame(ctx context.Context) {
 		s.log.Info().
 			Msg("game ready")
 	}
+	return nil
 }
 
 func (s *MCServer) handleRequest(c net.Conn) {

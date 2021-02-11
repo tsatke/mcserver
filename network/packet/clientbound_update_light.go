@@ -32,8 +32,8 @@ func (c ClientboundUpdateLight) EncodeInto(w io.Writer) (err error) {
 
 	enc := Encoder{w}
 
-	enc.WriteInt("chunk x", int32(c.ChunkPos.X))
-	enc.WriteInt("chunk z", int32(c.ChunkPos.Z))
+	enc.WriteVarInt("chunk x", c.ChunkPos.X)
+	enc.WriteVarInt("chunk z", c.ChunkPos.Z)
 	enc.WriteBoolean("trust edges", c.TrustEdges)
 	enc.WriteVarInt("sky light mask", c.SkyLightMask)
 	enc.WriteVarInt("block light mask", c.BlockLightMask)

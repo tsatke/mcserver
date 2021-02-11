@@ -3,6 +3,7 @@ package packet
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -46,6 +47,13 @@ func stringMaxLength(fieldName string, maxLen int, str string) error {
 func stringNotEmpty(fieldName, str string) error {
 	if str == "" {
 		return fmt.Errorf("%s must not be empty", fieldName)
+	}
+	return nil
+}
+
+func stringNotContains(fieldName, str, forbidden string) error {
+	if strings.Contains(str, forbidden) {
+		return fmt.Errorf("%s must not contain %q", fieldName, forbidden)
 	}
 	return nil
 }

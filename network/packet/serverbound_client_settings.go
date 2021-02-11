@@ -50,3 +50,12 @@ func (s *ServerboundClientSettings) DecodeFrom(rd io.Reader) (err error) {
 
 	return
 }
+
+func (s *ServerboundClientSettings) Validate() error {
+	return multiValidate(
+		stringNotEmpty("locale", s.Locale),
+		intWithinRange("view distance", 1, 48, s.ViewDistance),
+		intWithinRange("chat mode", 0, 2, int(s.ChatMode)),
+		intWithinRange("main hand", 0, 1, int(s.MainHand)),
+	)
+}

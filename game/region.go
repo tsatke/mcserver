@@ -119,3 +119,7 @@ func (r *Region) loadChunk(chunkCoord voxel.V2) (*chunk.Chunk, error) {
 
 	return chunk.LoadChunk(r.log, decompressorReader)
 }
+
+func (r *Region) storeChunk(ch *chunk.Chunk) error {
+	panic("store chunk not implemented yet")
+}

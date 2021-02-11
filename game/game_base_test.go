@@ -23,6 +23,8 @@ type GameSuite struct {
 func (suite *GameSuite) SetupSuite() {
 	suite.testdata = afero.NewBasePathFs(afero.NewOsFs(), "testdata")
 	suite.world = afero.NewCopyOnWriteFs(afero.NewBasePathFs(suite.testdata, "maps/world01"), afero.NewMemMapFs())
-	suite.game = New(zerolog.Nop(), suite.world)
+	game, err := New(zerolog.Nop(), suite.world)
+	suite.NoError(err)
+	suite.game = game
 	suite.NoError(suite.game.loadWorld())
 }

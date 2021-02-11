@@ -22,11 +22,11 @@ func (s *Section) BlockAt(position voxel.V3) block.Block {
 	blockPos := (position.Y%16)*16*16 + position.Z*16 + position.X
 	paletteIndicesCache := s.PaletteIndices()
 	if blockPos >= len(paletteIndicesCache) {
-		return block.Air
+		return airBlock
 	}
 	paletteIndex := paletteIndicesCache[blockPos]
 	if int(paletteIndex) >= len(s.Palette) {
-		return block.Air
+		return airBlock
 	}
 	return s.Palette[paletteIndex]
 }

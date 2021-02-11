@@ -17,6 +17,11 @@ func (suite *PacketSuite) TestServerboundLoginStart_Validate() {
 			false,
 		},
 		{
+			"username with space",
+			"my username",
+			true,
+		},
+		{
 			"valid max len",
 			"0123456789abcdef",
 			false,

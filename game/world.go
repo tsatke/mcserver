@@ -87,7 +87,7 @@ func (w *World) LoadNBTPlayerdata(playerUUID uuid.UUID) (nbt.Tag, error) {
 }
 
 // loadRegion will return nil if there is no region created yet.
-func (w *World) loadRegion(coord voxel.V2) (*Region, error) {
+func (w *World) LoadRegion(coord voxel.V2) (*Region, error) {
 	regionFileName := fmt.Sprintf("r.%d.%d.mca", coord.X, coord.Z)
 	regionFile, err := w.region.Open(regionFileName)
 	if err != nil {

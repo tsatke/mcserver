@@ -13,7 +13,6 @@ import (
 	"github.com/tsatke/nbt"
 
 	"github.com/tsatke/mcserver/game/chat"
-	"github.com/tsatke/mcserver/game/chunk"
 	"github.com/tsatke/mcserver/game/entity"
 	"github.com/tsatke/mcserver/game/id"
 	"github.com/tsatke/mcserver/game/voxel"
@@ -40,26 +39,61 @@ type Game struct {
 
 	currentTick int64
 
-	loadedChunks map[voxel.V2]*chunk.Chunk
+	chunkService ChunkService
 
 	connectedPlayers     map[uuid.UUID]*Player
 	incomingMessageQueue chan incomingMessage
 }
 
-func New(log zerolog.Logger, world afero.Fs) *Game {
-	return &Game{
-		log:                  log,
-		ready:                make(chan struct{}),
-		fs:                   world,
-		loadedChunks:         make(map[voxel.V2]*chunk.Chunk),
+func New(log zerolog.Logger, world afero.Fs) (*Game, error) {
+	g := &Game{
+		log:   log,
+		ready: make(chan struct{}),
+		fs:    world,
+
 		connectedPlayers:     make(map[uuid.UUID]*Player),
 		incomingMessageQueue: make(chan incomingMessage, defaultQueueBufferSize), // TODO: check if 100 is too large, too little or whatever
 	}
+	if err := g.initialize(); err != nil {
+		return nil, fmt.Errorf("initialize: %w", err)
+	}
+	return g, nil
 }
 
-// Start starts the main game loop. To stop, you have to cancel the context passed into this method.
+// Start will start the game by starting to process incoming messages.
+// This will also start the tick loop. This method will not terminate
+// until the given context is canceled.
 func (g *Game) Start(ctx context.Context) {
-	go g.start(ctx)
+	// TODO: maybe more workers?
+	go g.workIncomingMessageQueue(ctx)
+
+	g.log.Debug().
+		Stringer("tick", TickDuration).
+		Msg("starting tick loop")
+	ticker := time.NewTicker(TickDuration)
+	lastTime := time.Now()
+tickLoop:
+	for {
+		select {
+		case <-ctx.Done():
+			break tickLoop
+		case t := <-ticker.C:
+			sinceLast := time.Since(lastTime)
+			if sinceLast > 2*TickDuration {
+				g.log.Info().
+					Stringer("sinceLast", sinceLast).
+					Int("skipped", int(sinceLast/TickDuration)-1).
+					Msg("can't keep up, skipping ticks")
+			}
+			lastTime = t
+
+			g.tick()
+			g.currentTick++
+		}
+	}
+
+	g.log.Debug().
+		Msg("stopped tick loop")
 }
 
 func (g *Game) Ready() <-chan struct{} {
@@ -193,6 +227,62 @@ func (g *Game) AddPlayer(p *Player) {
 	g.WritePacket(p, packet.ClientboundUpdateViewPosition{
 		Chunk: voxel.V2{0, 0},
 	})
+	g.WritePacket(p, packet.ClientboundUpdateLight{
+		ChunkPos:            voxel.V2{0, 0},
+		TrustEdges:          false,
+		SkyLightMask:        0b00_00000010_00000000,
+		BlockLightMask:      0b00_00000001_00000000,
+		EmptySkyLightMask:   0b00_00000000_10000000,
+		EmptyBlockLightMask: 0b00_00000000_10000000,
+		SkyLightArrays:      [][2048]byte{{}},
+		BlockLightArrays:    [][2048]byte{{}},
+	})
+
+	playerChunk := p.Chunk()
+	for x := playerChunk.X - 7; x <= playerChunk.X+7; x++ {
+		for z := playerChunk.X - 7; z <= playerChunk.X+7; z++ {
+			coord := voxel.V2{x, z}
+			loaded, err := g.chunkService.Chunk(coord)
+			if err != nil {
+				g.log.Error().
+					Err(err).
+					Stringer("chunk", coord).
+					Msg("load chunk")
+			}
+			// TODO: send 'loaded' to player
+
+			g.WritePacket(p, packet.ClientboundChunkData{
+				ChunkPos:       coord,
+				FullChunk:      true,
+				PrimaryBitMask: 0b11111,
+				Heightmaps:     loaded.Data.Level.Heightmaps.ToNBT(),
+				Biomes:         loaded.Data.Level.Biomes,
+				Data: []packet.ChunkDataSection{
+					{
+						BlockCount: len(loaded.Data.Level.Sections[0].Palette),
+						Palette:    loaded.Data.Level.Sections[0].Palette,
+					},
+					{
+						BlockCount: len(loaded.Data.Level.Sections[1].Palette),
+						Palette:    loaded.Data.Level.Sections[1].Palette,
+					},
+					{
+						BlockCount: len(loaded.Data.Level.Sections[2].Palette),
+						Palette:    loaded.Data.Level.Sections[2].Palette,
+					},
+					{
+						BlockCount: len(loaded.Data.Level.Sections[3].Palette),
+						Palette:    loaded.Data.Level.Sections[3].Palette,
+					},
+					{
+						BlockCount: len(loaded.Data.Level.Sections[4].Palette),
+						Palette:    loaded.Data.Level.Sections[4].Palette,
+					},
+				},
+				BlockEntities: nil,
+			})
+		}
+	}
 
 	go g.handleIncomingPlayerMessages(p)
 }
@@ -283,41 +373,6 @@ func (g *Game) loadPlayerEntity(p *Player) error {
 	return nil
 }
 
-func (g *Game) start(ctx context.Context) {
-	g.prepare()
-
-	// TODO: maybe more workers?
-	go g.workIncomingMessageQueue(ctx)
-
-	g.log.Debug().
-		Stringer("tick", TickDuration).
-		Msg("starting tick loop")
-	ticker := time.NewTicker(TickDuration)
-	lastTime := time.Now()
-tickLoop:
-	for {
-		select {
-		case <-ctx.Done():
-			break tickLoop
-		case t := <-ticker.C:
-			sinceLast := time.Since(lastTime)
-			if sinceLast > 2*TickDuration {
-				g.log.Info().
-					Stringer("sinceLast", sinceLast).
-					Int("skipped", int(sinceLast/TickDuration)-1).
-					Msg("can't keep up, skipping ticks")
-			}
-			lastTime = t
-
-			g.tick()
-			g.currentTick++
-		}
-	}
-
-	g.log.Debug().
-		Msg("stopped tick loop")
-}
-
 func (g *Game) workIncomingMessageQueue(ctx context.Context) {
 workLoop:
 	for {
@@ -352,45 +407,4 @@ func (g *Game) loadWorld() error {
 		Stringer("took", time.Since(worldLoadStart)).
 		Msg("loaded world")
 	return nil
-}
-
-func (g *Game) loadChunkAtCoord(coord voxel.V2) (*chunk.Chunk, error) {
-	if loaded, ok := g.loadedChunks[coord]; ok {
-		return loaded, nil
-	}
-	start := time.Now()
-	regionCoord := voxel.V2{coord.X >> 5, coord.Z >> 5}
-	region, err := g.world.loadRegion(regionCoord)
-	if err != nil {
-		return nil, err
-	}
-	chunk, err := region.loadChunk(coord)
-	if err != nil {
-		return nil, fmt.Errorf("load chunk: %w", err)
-	}
-
-	// remember that this chunk is currently loaded
-	g.loadChunk(chunk)
-	g.log.Debug().
-		Stringer("took", time.Since(start)).
-		Stringer("chunk", coord).
-		Msg("load chunk")
-	return chunk, nil
-}
-
-func (g *Game) loadChunk(ch *chunk.Chunk) {
-	g.loadedChunks[ch.Coord] = ch
-}
-
-// generateAndLoadChunk will generate and load the chunk with the given coordinates.
-// This will fail if the chunk already exists and is loaded, but not if the chunk
-// already exists and is not loaded. If the chunk already exists (and is not loaded),
-// The chunk will be overwritten.
-func (g *Game) generateAndLoadChunk(coord voxel.V2) (*chunk.Chunk, error) {
-	if _, ok := g.loadedChunks[coord]; ok {
-		return nil, fmt.Errorf("chunk %s already exists and is loaded", coord)
-	}
-	chunk := g.world.generator.GenerateChunk(coord)
-	g.loadChunk(chunk)
-	return chunk, nil
 }

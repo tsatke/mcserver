@@ -6,6 +6,8 @@ import (
 
 	"github.com/tsatke/nbt"
 
+	"github.com/tsatke/mcserver/game/block"
+	"github.com/tsatke/mcserver/game/entity"
 	"github.com/tsatke/mcserver/game/voxel"
 )
 
@@ -26,8 +28,13 @@ type ClientboundChunkData struct {
 	PrimaryBitMask uint16
 	Heightmaps     nbt.Tag
 	Biomes         []int
-	Data           []byte
-	BlockEntities  []nbt.Tag
+	Data           []ChunkDataSection
+	BlockEntities  []entity.Entity
+}
+
+type ChunkDataSection struct {
+	BlockCount int
+	Palette    []block.Block
 }
 
 func (ClientboundChunkData) ID() ID       { return IDClientboundChunkData }
@@ -50,11 +57,11 @@ func (c ClientboundChunkData) EncodeInto(w io.Writer) (err error) {
 		}
 	}
 	enc.WriteVarInt("size", len(c.Data))
-	enc.WriteByteArray("data", c.Data)
+	// enc.WriteByteArray("data", c.Data)
 	enc.WriteVarInt("number of block entities", len(c.BlockEntities))
-	for _, entity := range c.BlockEntities {
-		enc.WriteNBT("block entity", entity)
-	}
+	// for _, entity := range c.BlockEntities {
+	// enc.WriteNBT("block entity", entity)
+	// }
 
 	return
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -17,6 +18,8 @@ import (
 
 type Chunk struct {
 	log zerolog.Logger
+
+	sync.Mutex
 
 	// Coord are the chunk coordinates (XZ).
 	Coord voxel.V2
@@ -104,21 +107,28 @@ func (ch *Chunk) loadData(tag nbt.Tag) (err error) {
 			must(mapper.MapList("Palette", func(size int) {
 				data.Level.Sections[secY].Palette = make([]block.Block, size)
 			}, func(paletteIndex int, mapper nbt.Mapper) error {
-				target := &data.Level.Sections[secY].Palette[paletteIndex]
 				var idString string
 				must(mapper.MapString("Name", &idString))
 				id := id.ParseID(idString)
-				target.Name = id
-				propertiesTag, err := mapper.Query("Properties")
+
+				var properties []block.Property
+				propertiesTag, _ := mapper.Query("Properties") // ignore the error, since properties seem to be optional
+				if propertiesTag != nil {
+					for name, value := range propertiesTag.(*nbt.Compound).Value {
+						propertyDesc, ok := block.DescriptorForPropertyName(name)
+						// if !ok {
+						// 	return fmt.Errorf("no property descriptor for property %q", name)
+						// }
+						_, _ = propertyDesc, ok
+						_ = value // TODO: decode this properly
+					}
+				}
+
+				block, err := block.Create(id, properties...)
 				if err != nil {
-					// properties seems to be optional, so skip it if there's an error
-					return nil
+					return fmt.Errorf("create block: %w", err)
 				}
-				properties := propertiesTag.(*nbt.Compound).Value
-				target.Properties = make(map[string]interface{})
-				for name, value := range properties {
-					target.Properties[name] = value
-				}
+				data.Level.Sections[secY].Palette[paletteIndex] = block
 				return nil
 			}))
 			_ = mapper.MapByteArray("BlockLight", &data.Level.Sections[secY].BlockLight)
@@ -175,10 +185,14 @@ func (ch *Chunk) SetBlockAt(pos voxel.V3, newBlock block.Block) {
 		// we need to grow the indices
 		newIndices := make([]uint64, indexOffset+1)
 		// fill newIndices with reference to air
-		airIndex := section.paletteIndexOf(block.Air)
+		airBlock, err := block.CreateFromDescriptor(block.Air)
+		if err != nil {
+			panic(fmt.Errorf("unable to create air block: %w", err))
+		}
+		airIndex := section.paletteIndexOf(airBlock)
 		if airIndex == -1 {
 			// we need to add air to the palette
-			section.Palette = append(section.Palette, block.Air)
+			section.Palette = append(section.Palette, airBlock)
 			airIndex = len(section.Palette) - 1
 		}
 		for i := range newIndices {

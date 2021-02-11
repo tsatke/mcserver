@@ -1,6 +1,8 @@
 package chunk
 
 import (
+	"github.com/tsatke/nbt"
+
 	"github.com/tsatke/mcserver/game/entity"
 )
 
@@ -62,3 +64,9 @@ type (
 		Liquid []int8
 	}
 )
+
+func (h Heightmaps) ToNBT() nbt.Tag {
+	return nbt.NewCompoundTag("", []nbt.Tag{
+		nbt.NewLongArrayTag("MOTION_BLOCKING", h.MotionBlocking),
+	})
+}

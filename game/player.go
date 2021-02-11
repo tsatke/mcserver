@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/tsatke/mcserver/game/entity"
+	"github.com/tsatke/mcserver/game/voxel"
 	"github.com/tsatke/mcserver/network"
 )
 
@@ -48,4 +49,11 @@ func NewPlayer(uuid uuid.UUID, name string, conn *network.Conn) *Player {
 
 func (p *Player) Disconnect() {
 	_ = p.conn.Close()
+}
+
+func (p *Player) Chunk() voxel.V2 {
+	return voxel.V2{
+		X: int(p.Pos[0]) >> 4,
+		Z: int(p.Pos[2]) >> 4,
+	}
 }

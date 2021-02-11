@@ -4,7 +4,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/afero"
 
-	"github.com/tsatke/mcserver/game/block"
 	"github.com/tsatke/mcserver/game/id"
 	"github.com/tsatke/mcserver/game/voxel"
 )
@@ -127,14 +126,14 @@ func (suite *WorldSuite) TestLoadWorld() {
 		}, world.Level)
 	})
 	suite.Run("chunk 0,0", func() {
-		reg, err := world.loadRegion(voxel.V2{0, 0})
+		reg, err := world.LoadRegion(voxel.V2{0, 0})
 		suite.NoError(err)
 		defer func() {
 			suite.NoError(reg.Close())
 		}()
 
 		c1, err := reg.loadChunk(voxel.V2{0, 0})
-		suite.NoError(err)
+		suite.Require().NoError(err)
 
 		// unfortunately we cannot test every block in the entire chunk due to limitations
 		// in the Go linker.
@@ -144,9 +143,7 @@ func (suite *WorldSuite) TestLoadWorld() {
 			for z := 0; z < 16; z++ {
 				for x := 0; x < 16; x++ {
 					got := c1.BlockAt(voxel.V3{x, 0, z})
-					suite.Equal(block.Block{
-						Name: id.ParseID("minecraft:bedrock"),
-					}, got)
+					suite.Equal(id.ParseID("minecraft:bedrock"), got.ID())
 				}
 			}
 		})

@@ -51,7 +51,7 @@ func (suite *ServerSuite) SetupTest() {
 	suite.listener = lis
 
 	srv, err := New(
-		zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.InfoLevel).With().Timestamp().Logger(),
+		zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.TraceLevel).With().Timestamp().Logger(),
 		// zerolog.Nop(),
 		testConfig(),
 		WithListener(lis),
@@ -147,7 +147,7 @@ func (suite *ServerSuite) DoReceive(from io.Reader, fn func(packet.ID, packet.De
 		/*
 			Might happen because the connection is still open but the server didn't
 			send a message. This can not happen when the connection is closed; then
-			io.ClosedOrEOF will be returned.
+			io.EOF will be returned.
 		*/
 		suite.FailNow("timeout while receiving")
 	}
@@ -158,10 +158,19 @@ func (suite *ServerSuite) DoReceive(from io.Reader, fn func(packet.ID, packet.De
 // A reader is considered closed if a read returns an io.EOF. Please note that this
 // method reads one byte from the given reader.
 func (suite *ServerSuite) ClosedOrEOF(rd io.Reader) {
-	_, err := rd.Read([]byte{0})
-	if !errors.Is(err, io.EOF) {
-		if netErr, ok := err.(net.Error); !ok && netErr.Temporary() {
-			suite.Fail("error is not not EOF or closed")
+	ch := make(chan struct{})
+	go func() {
+		_, err := rd.Read([]byte{0})
+		if !errors.Is(err, io.EOF) {
+			if netErr, ok := err.(net.Error); !ok && netErr.Temporary() {
+				suite.Fail("error is not not EOF or closed")
+			}
 		}
+		close(ch)
+	}()
+	select {
+	case <-ch:
+	case <-time.After(5 * time.Second):
+		suite.FailNow("connection not closed")
 	}
 }
