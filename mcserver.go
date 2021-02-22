@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -12,6 +13,7 @@ import (
 	"github.com/tsatke/mcserver/config"
 	"github.com/tsatke/mcserver/game"
 	"github.com/tsatke/mcserver/game/chat"
+	"github.com/tsatke/mcserver/game/world"
 	"github.com/tsatke/mcserver/network"
 	"github.com/tsatke/mcserver/network/packet"
 )
@@ -86,11 +88,20 @@ func (s *MCServer) Stop() {
 }
 
 func (s *MCServer) prepareGame(ctx context.Context) error {
+	start := time.Now()
+	w, err := world.LoadVanilla(afero.NewBasePathFs(afero.NewOsFs(), s.config.GameWorld()))
+	if err != nil {
+		return fmt.Errorf("load world: %w", err)
+	}
+	s.log.Info().
+		Stringer("took", time.Since(start)).
+		Msg("loaded world")
+
 	g, err := game.New(
-		s.log.With().
+		w,
+		game.WithLogger(s.log.With().
 			Str("component", "game").
-			Logger(),
-		afero.NewBasePathFs(afero.NewOsFs(), s.config.GameWorld()),
+			Logger()),
 	)
 	if err != nil {
 		return fmt.Errorf("create game: %w", err)
@@ -98,6 +109,8 @@ func (s *MCServer) prepareGame(ctx context.Context) error {
 
 	s.game = g
 	go s.game.Start(ctx)
+	s.log.Debug().
+		Msg("wait for game to be ready")
 	select {
 	case <-ctx.Done():
 		s.log.Info().

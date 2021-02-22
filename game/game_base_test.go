@@ -3,9 +3,10 @@ package game
 import (
 	"testing"
 
-	"github.com/rs/zerolog"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/tsatke/mcserver/game/world"
 )
 
 func TestGameSuite(t *testing.T) {
@@ -16,15 +17,19 @@ type GameSuite struct {
 	suite.Suite
 
 	testdata afero.Fs
-	world    afero.Fs
+	world    world.World
 	game     *Game
 }
 
 func (suite *GameSuite) SetupSuite() {
 	suite.testdata = afero.NewBasePathFs(afero.NewOsFs(), "testdata")
-	suite.world = afero.NewCopyOnWriteFs(afero.NewBasePathFs(suite.testdata, "maps/world01"), afero.NewMemMapFs())
-	game, err := New(zerolog.Nop(), suite.world)
+
+	worldFs := afero.NewCopyOnWriteFs(afero.NewBasePathFs(suite.testdata, "maps/world01"), afero.NewMemMapFs())
+	world, err := world.LoadVanilla(worldFs)
+	suite.NoError(err)
+	suite.world = world
+
+	game, err := New(suite.world)
 	suite.NoError(err)
 	suite.game = game
-	suite.NoError(suite.game.loadWorld())
 }

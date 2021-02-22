@@ -7,6 +7,8 @@ import (
 )
 
 func (suite *GameSuite) TestLoadPlayerEntity() {
+	suite.T().Skip("LoadPlayerEntity unimplemented")
+
 	playerUUID, err := uuid.Parse("eac89a9e-9471-4ce4-ab2e-1b2a725a57fd")
 	suite.NoError(err)
 	player := &Player{

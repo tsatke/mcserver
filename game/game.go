@@ -3,19 +3,18 @@ package game
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
-	"github.com/spf13/afero"
 	"github.com/tsatke/nbt"
 
 	"github.com/tsatke/mcserver/game/chat"
 	"github.com/tsatke/mcserver/game/entity"
 	"github.com/tsatke/mcserver/game/id"
 	"github.com/tsatke/mcserver/game/voxel"
+	"github.com/tsatke/mcserver/game/world"
 	"github.com/tsatke/mcserver/network/packet"
 )
 
@@ -34,29 +33,28 @@ type Game struct {
 	log   zerolog.Logger
 	ready chan struct{}
 
-	fs    afero.Fs
-	world *World
+	world world.World
 
 	currentTick int64
-
-	chunkService ChunkService
 
 	connectedPlayers     map[uuid.UUID]*Player
 	incomingMessageQueue chan incomingMessage
 }
 
-func New(log zerolog.Logger, world afero.Fs) (*Game, error) {
+func New(world world.World, opts ...Option) (*Game, error) {
 	g := &Game{
-		log:   log,
+		log:   zerolog.Nop(),
 		ready: make(chan struct{}),
-		fs:    world,
+		world: world,
 
 		connectedPlayers:     make(map[uuid.UUID]*Player),
 		incomingMessageQueue: make(chan incomingMessage, defaultQueueBufferSize), // TODO: check if 100 is too large, too little or whatever
 	}
-	if err := g.initialize(); err != nil {
-		return nil, fmt.Errorf("initialize: %w", err)
+
+	for _, opt := range opts {
+		opt(g)
 	}
+
 	return g, nil
 }
 
@@ -64,6 +62,9 @@ func New(log zerolog.Logger, world afero.Fs) (*Game, error) {
 // This will also start the tick loop. This method will not terminate
 // until the given context is canceled.
 func (g *Game) Start(ctx context.Context) {
+	// TODO: initialize game
+	close(g.ready)
+
 	// TODO: maybe more workers?
 	go g.workIncomingMessageQueue(ctx)
 
@@ -241,46 +242,46 @@ func (g *Game) AddPlayer(p *Player) {
 	playerChunk := p.Chunk()
 	for x := playerChunk.X - 7; x <= playerChunk.X+7; x++ {
 		for z := playerChunk.X - 7; z <= playerChunk.X+7; z++ {
-			coord := voxel.V2{x, z}
-			loaded, err := g.chunkService.Chunk(coord)
-			if err != nil {
-				g.log.Error().
-					Err(err).
-					Stringer("chunk", coord).
-					Msg("load chunk")
-			}
-			// TODO: send 'loaded' to player
-
-			g.WritePacket(p, packet.ClientboundChunkData{
-				ChunkPos:       coord,
-				FullChunk:      true,
-				PrimaryBitMask: 0b11111,
-				Heightmaps:     loaded.Data.Level.Heightmaps.ToNBT(),
-				Biomes:         loaded.Data.Level.Biomes,
-				Data: []packet.ChunkDataSection{
-					{
-						BlockCount: len(loaded.Data.Level.Sections[0].Palette),
-						Palette:    loaded.Data.Level.Sections[0].Palette,
-					},
-					{
-						BlockCount: len(loaded.Data.Level.Sections[1].Palette),
-						Palette:    loaded.Data.Level.Sections[1].Palette,
-					},
-					{
-						BlockCount: len(loaded.Data.Level.Sections[2].Palette),
-						Palette:    loaded.Data.Level.Sections[2].Palette,
-					},
-					{
-						BlockCount: len(loaded.Data.Level.Sections[3].Palette),
-						Palette:    loaded.Data.Level.Sections[3].Palette,
-					},
-					{
-						BlockCount: len(loaded.Data.Level.Sections[4].Palette),
-						Palette:    loaded.Data.Level.Sections[4].Palette,
-					},
-				},
-				BlockEntities: nil,
-			})
+			// coord := voxel.V2{x, z}
+			// loaded, err := g.world.Chunk(coord)
+			// if err != nil {
+			// 	g.log.Error().
+			// 		Err(err).
+			// 		Stringer("chunk", coord).
+			// 		Msg("load chunk")
+			// }
+			// // TODO: send 'loaded' to player
+			//
+			// g.WritePacket(p, packet.ClientboundChunkData{
+			// 	ChunkPos:       coord,
+			// 	FullChunk:      true,
+			// 	PrimaryBitMask: 0b11111,
+			// 	Heightmaps:     loaded.Data.Level.Heightmaps.ToNBT(),
+			// 	Biomes:         loaded.Data.Level.Biomes,
+			// 	Data: []packet.ChunkDataSection{
+			// 		{
+			// 			BlockCount: len(loaded.Data.Level.Sections[0].Palette),
+			// 			Palette:    loaded.Data.Level.Sections[0].Palette,
+			// 		},
+			// 		{
+			// 			BlockCount: len(loaded.Data.Level.Sections[1].Palette),
+			// 			Palette:    loaded.Data.Level.Sections[1].Palette,
+			// 		},
+			// 		{
+			// 			BlockCount: len(loaded.Data.Level.Sections[2].Palette),
+			// 			Palette:    loaded.Data.Level.Sections[2].Palette,
+			// 		},
+			// 		{
+			// 			BlockCount: len(loaded.Data.Level.Sections[3].Palette),
+			// 			Palette:    loaded.Data.Level.Sections[3].Palette,
+			// 		},
+			// 		{
+			// 			BlockCount: len(loaded.Data.Level.Sections[4].Palette),
+			// 			Palette:    loaded.Data.Level.Sections[4].Palette,
+			// 		},
+			// 	},
+			// 	BlockEntities: nil,
+			// })
 		}
 	}
 
@@ -350,7 +351,7 @@ func (g *Game) sendJoinGameMessage(p *Player, dimensionCodec *nbt.Compound) {
 			Value[0].(*nbt.Compound).
 			Value["element"],
 		WorldName:           id.ParseID("world"),
-		HashedSeed:          g.world.WorldGenSettings.Seed,
+		HashedSeed:          g.world.Seed(),
 		MaxPlayers:          100,
 		ViewDistance:        5,
 		ReducedDebugInfo:    false,
@@ -361,15 +362,15 @@ func (g *Game) sendJoinGameMessage(p *Player, dimensionCodec *nbt.Compound) {
 }
 
 func (g *Game) loadPlayerEntity(p *Player) error {
-	data, err := g.world.LoadNBTPlayerdata(p.UUID)
-	if err != nil {
-		return fmt.Errorf("load nbt data: %w", err)
-	}
-
-	if err := entity.PlayerFromNBTIntoPlayer(data, p.Player); err != nil {
-		return fmt.Errorf("decode nbt: %w", err)
-	}
-
+	// data, err := g.world.LoadNBTPlayerdata(p.UUID)
+	// if err != nil {
+	// 	return fmt.Errorf("load nbt data: %w", err)
+	// }
+	//
+	// if err := entity.PlayerFromNBTIntoPlayer(data, p.Player); err != nil {
+	// 	return fmt.Errorf("decode nbt: %w", err)
+	// }
+	//
 	return nil
 }
 
@@ -394,17 +395,4 @@ workLoop:
 
 	g.log.Debug().
 		Msg("stopped message worker")
-}
-
-func (g *Game) loadWorld() error {
-	worldLoadStart := time.Now()
-	loaded, err := LoadWorld(g.log, g.fs)
-	if err != nil {
-		return fmt.Errorf("load world: %w", err)
-	}
-	g.world = loaded
-	g.log.Debug().
-		Stringer("took", time.Since(worldLoadStart)).
-		Msg("loaded world")
-	return nil
 }

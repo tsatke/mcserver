@@ -1,4 +1,4 @@
-package chunk
+package world
 
 import (
 	"math"
@@ -8,7 +8,7 @@ import (
 	"github.com/tsatke/mcserver/game/voxel"
 )
 
-type Section struct {
+type vanillaSection struct {
 	paletteIndices []uint64
 
 	Y           int8
@@ -18,8 +18,8 @@ type Section struct {
 	SkyLight    []int8
 }
 
-func (s *Section) BlockAt(position voxel.V3) block.Block {
-	blockPos := (position.Y%16)*16*16 + position.Z*16 + position.X
+func (s *vanillaSection) BlockAt(v3 voxel.V3) block.Block {
+	blockPos := (v3.Y%16)*16*16 + v3.Z*16 + v3.X
 	paletteIndicesCache := s.PaletteIndices()
 	if blockPos >= len(paletteIndicesCache) {
 		return airBlock
@@ -31,7 +31,7 @@ func (s *Section) BlockAt(position voxel.V3) block.Block {
 	return s.Palette[paletteIndex]
 }
 
-func (s *Section) PaletteIndices() []uint64 {
+func (s *vanillaSection) PaletteIndices() []uint64 {
 	if len(s.paletteIndices) == 0 && len(s.Palette) > 0 {
 		segmentLength := int(math.Floor(math.Log2(float64(len(s.Palette))))) + 1
 		s.paletteIndices = splitArrayIntoBitSegments(s.BlockStates, segmentLength)
@@ -39,7 +39,7 @@ func (s *Section) PaletteIndices() []uint64 {
 	return s.paletteIndices
 }
 
-func (s *Section) paletteIndexOf(block block.Block) int {
+func (s *vanillaSection) paletteIndexOf(block block.Block) int {
 	for i, pb := range s.Palette {
 		if reflect.DeepEqual(pb, block) {
 			return i
@@ -49,6 +49,7 @@ func (s *Section) paletteIndexOf(block block.Block) int {
 }
 
 func splitArrayIntoBitSegments(array []int64, segmentLength int) []uint64 {
+	// TODO: use comparr package
 	var result []uint64
 
 	mask := createHiMask(segmentLength)

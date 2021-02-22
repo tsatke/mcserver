@@ -1,4 +1,4 @@
-package chunk
+package world
 
 type Status string
 

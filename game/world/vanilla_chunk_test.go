@@ -1,4 +1,4 @@
-package chunk
+package world
 
 import (
 	"testing"
@@ -10,21 +10,18 @@ import (
 	"github.com/tsatke/mcserver/game/voxel"
 )
 
-func TestChunkSuite(t *testing.T) {
-	suite.Run(t, new(ChunkSuite))
+func TestVanillaChunkSuite(t *testing.T) {
+	suite.Run(t, new(VanillaChunkSuite))
 }
 
-type ChunkSuite struct {
+type VanillaChunkSuite struct {
 	suite.Suite
 }
 
-func (suite *ChunkSuite) TestSetBlockAt() {
-	ch := &Chunk{
+func (suite *VanillaChunkSuite) TestSetBlockAt() {
+	ch := &vanillaChunk{
 		Coord:        voxel.V2{0, 0},
 		LastModified: time.Now(),
-		Data: &Data{
-			Level: Level{},
-		},
 	}
 	suite.Equal(airBlock, ch.BlockAt(voxel.V3{0, 0, 0}))
 	ch.SetBlockAt(voxel.V3{0, 0, 0}, bedrockBlock)
@@ -55,10 +52,10 @@ func (suite *ChunkSuite) TestSetBlockAt() {
 	// functionality is tested, now check internal values
 
 	// check that all sections except sec[0] are still empty
-	for i := 1; i < len(ch.Data.Level.Sections); i++ {
-		suite.Zero(ch.Data.Level.Sections[i])
+	for i := 1; i < len(ch.Sections); i++ {
+		suite.Zero(ch.Sections[i])
 	}
-	sec0 := ch.Data.Level.Sections[0]
+	sec0 := ch.Sections[0]
 	suite.EqualValues(0, sec0.Y)
 	suite.ElementsMatch([]block.Block{
 		airBlock,
