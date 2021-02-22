@@ -6,7 +6,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/rs/zerolog"
 	"github.com/tsatke/nbt"
 
 	"github.com/tsatke/mcserver/game/block"
@@ -26,7 +25,6 @@ type readWriteCloserAt interface {
 }
 
 type vanillaRegion struct {
-	log        zerolog.Logger
 	source     readWriteCloserAt
 	locations  []vanillaRegionChunkLocation
 	timestamps []vanillaRegionChunkTimestamp
