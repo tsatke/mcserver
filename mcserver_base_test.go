@@ -50,11 +50,9 @@ func (suite *ServerSuite) SetupTest() {
 	suite.Require().NoError(err)
 	suite.listener = lis
 
-	srv, err := New(
-		zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.TraceLevel).With().Timestamp().Logger(),
-		// zerolog.Nop(),
-		testConfig(),
+	srv, err := New(testConfig(),
 		WithListener(lis),
+		WithLogger(zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.TraceLevel).With().Timestamp().Logger()),
 	)
 	suite.Require().NoError(err)
 	suite.server = srv
@@ -80,9 +78,6 @@ func (suite *ServerSuite) TearDownTest() {
 	}
 	if suite.listener != nil {
 		_ = suite.listener.Close()
-	}
-	if suite.server != nil {
-		suite.server.Stop()
 	}
 }
 
