@@ -2,6 +2,10 @@ package packet
 
 import "fmt"
 
+// ID is the ID of a packet. Per definition an ID is not a single byte value.
+// In the packets, it is always encoded as VarInt.
+// Packet IDs are not unique, only the combination between packet ID and packet phase,
+// e.g. packet 0x00 in PhasePlay is unique.
 type ID int
 
 // Packet IDs.

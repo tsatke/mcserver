@@ -11,8 +11,10 @@ func init() {
 
 //go:generate stringer -linecomment -output=serverbound_handshake_string.go -type=NextState
 
+// NextState is a type for the next state constants.
 type NextState uint8
 
+// Allowed NextStates.
 const (
 	NextStateStatus NextState = 1 // Status
 	NextStateLogin  NextState = 2 // Login
@@ -30,9 +32,13 @@ type ServerboundHandshake struct {
 	NextState NextState
 }
 
-func (ServerboundHandshake) ID() ID       { return IDServerboundHandshake }
+// ID returns the constant packet ID.
+func (ServerboundHandshake) ID() ID { return IDServerboundHandshake }
+
+// Name returns the constant packet name.
 func (ServerboundHandshake) Name() string { return "Handshake" }
 
+// DecodeFrom will fill this struct with values read from the given reader.
 func (s *ServerboundHandshake) DecodeFrom(rd io.Reader) (err error) {
 	defer recoverAndSetErr(&err)
 
@@ -46,6 +52,7 @@ func (s *ServerboundHandshake) DecodeFrom(rd io.Reader) (err error) {
 	return
 }
 
+// Validate implements the Validator interface.
 func (s ServerboundHandshake) Validate() error {
 	return multiValidate(
 		stringNotEmpty("server address", s.ServerAddress),

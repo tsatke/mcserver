@@ -26,6 +26,7 @@ const (
 )
 
 var (
+	// ByteOrder is the byte order in which packet fields will be read and written.
 	ByteOrder = binary.BigEndian
 )
 

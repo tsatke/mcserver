@@ -34,7 +34,9 @@ func run(stdin io.Reader, stdout io.Writer) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	srv, err := mcserver.New(log, cfg)
+	srv, err := mcserver.New(cfg,
+		mcserver.WithLogger(log),
+	)
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
 	}
@@ -51,8 +53,7 @@ func run(stdin io.Reader, stdout io.Writer) error {
 		case <-signalChan: // first signal, cancel context
 			log.Info().
 				Msg("shutting down...")
-			cancel()
-			srv.Stop()
+			cancel() // this will also stop the server
 		case <-ctx.Done():
 		}
 		<-signalChan // second signal, hard exit

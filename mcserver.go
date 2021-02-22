@@ -19,10 +19,14 @@ import (
 )
 
 const (
-	ServerVersion   = "1.16.5"
+	// ServerVersion is the vanilla server version that is mostly implemented by this server.
+	ServerVersion = "1.16.5"
+	// ProtocolVersion is the minecraft protocol version that this server implements.
 	ProtocolVersion = 754
 )
 
+// MCServer is a minecraft server. It holds things like a logger, a net.Listener, a game.Game and a config.Config,
+// and coordinates all the components.
 type MCServer struct {
 	log      zerolog.Logger
 	addr     string
@@ -32,9 +36,11 @@ type MCServer struct {
 	config config.Config
 }
 
-func New(log zerolog.Logger, config config.Config, opts ...Option) (*MCServer, error) {
+// New creates a new MCServer with the given config. This server will not use a logger. Use WithLogger if you
+// want the server to generate log output.
+func New(config config.Config, opts ...Option) (*MCServer, error) {
 	srv := &MCServer{
-		log:    log,
+		log:    zerolog.Nop(),
 		addr:   config.ServerAddr(),
 		config: config,
 	}
@@ -54,6 +60,9 @@ func New(log zerolog.Logger, config config.Config, opts ...Option) (*MCServer, e
 	return srv, nil
 }
 
+// Start will prepare the game. The given context will be respected. This method will go into an infinite
+// loop, accepting incoming connections. This method terminates only if an error occurs or if the context
+// was cancelled.
 func (s *MCServer) Start(ctx context.Context) error {
 	s.log.Info().
 		Msg("preparing game")
@@ -67,12 +76,16 @@ func (s *MCServer) Start(ctx context.Context) error {
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
+			// check if context was cancelled
 			select {
 			case <-ctx.Done():
+				// if the context was cancelled, ignore the error
 				s.log.Debug().
 					Msg("stopped waiting for incoming connections")
+				s.shutdown() // release resources
 				return nil
 			default:
+				// otherwise, return the error, interrupting the loop
 				return fmt.Errorf("accept: %w", err)
 			}
 		}
@@ -83,7 +96,7 @@ func (s *MCServer) Start(ctx context.Context) error {
 	}
 }
 
-func (s *MCServer) Stop() {
+func (s *MCServer) shutdown() {
 	_ = s.listener.Close()
 }
 

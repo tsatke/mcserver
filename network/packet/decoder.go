@@ -16,9 +16,12 @@ import (
 // fail by panicking an error. Avoid use outside of the packet package if possible.
 // If you need to use this, make sure that you recover any errors.
 type Decoder struct {
+	// Rd is the reader that data is read from.
 	Rd io.Reader
 }
 
+// ReadVarInt decodes a VarInt from the reader. This panics if the VarInt
+// consists of more than 5 bytes.
 func (d Decoder) ReadVarInt(fieldName string) int {
 	var res int32
 	var readCnt int
@@ -43,6 +46,9 @@ func (d Decoder) ReadVarInt(fieldName string) int {
 	return int(res)
 }
 
+// ReadString reads a VarInt from the reader. After the VarInt, n bytes will
+// be read, where n is the value of the read VarInt. There will be no pre-allocation.
+// Bytes are allocated as they are read.
 func (d Decoder) ReadString(fieldName string) string {
 	strLen := d.ReadVarInt(fieldName + " length")
 
@@ -67,6 +73,7 @@ func (d Decoder) ReadString(fieldName string) string {
 	return buf.String()
 }
 
+// ReadUbyte reads one byte from the reader.
 func (d Decoder) ReadUbyte(fieldName string) byte {
 	var buf [ByteSize]byte
 	_, err := io.ReadFull(d.Rd, buf[:])
@@ -75,6 +82,7 @@ func (d Decoder) ReadUbyte(fieldName string) byte {
 	return buf[0]
 }
 
+// ReadUshort reads two bytes in ByteOrder from the reader.
 func (d Decoder) ReadUshort(fieldName string) uint16 {
 	var buf [UnsignedShortSize]byte
 	_, err := io.ReadFull(d.Rd, buf[:])
@@ -83,10 +91,14 @@ func (d Decoder) ReadUshort(fieldName string) uint16 {
 	return ByteOrder.Uint16(buf[:])
 }
 
+// ReadByte reads a single byte from the reader and returns it with the MSB
+// as sign.
 func (d Decoder) ReadByte(fieldName string) int8 {
 	return int8(d.ReadUbyte(fieldName))
 }
 
+// ReadBoolean reads a single byte from the reader, and returns true
+// iff the byte is 0x01.
 func (d Decoder) ReadBoolean(fieldName string) bool {
 	var buf [BooleanSize]byte
 	_, err := io.ReadFull(d.Rd, buf[:])
@@ -95,6 +107,8 @@ func (d Decoder) ReadBoolean(fieldName string) bool {
 	return buf[0] == 1
 }
 
+// ReadUUID reads 16 bytes from the reader and returns it as
+// uuid.UUID.
 func (d Decoder) ReadUUID(fieldName string) uuid.UUID {
 	var uuid uuid.UUID
 	_, err := io.ReadFull(d.Rd, uuid[:])
@@ -102,6 +116,7 @@ func (d Decoder) ReadUUID(fieldName string) uuid.UUID {
 	return uuid
 }
 
+// ReadLong reads 8 bytes in the ByteOrder from the reader.
 func (d Decoder) ReadLong(fieldName string) int64 {
 	var buf [LongSize]byte
 	_, err := io.ReadFull(d.Rd, buf[:])
@@ -109,6 +124,7 @@ func (d Decoder) ReadLong(fieldName string) int64 {
 	return int64(ByteOrder.Uint64(buf[:]))
 }
 
+// ReadDouble reads an IEEE754 float64 from the reader. ByteOrder is respected.
 func (d Decoder) ReadDouble(fieldName string) float64 {
 	var buf [DoubleSize]byte
 	_, err := io.ReadFull(d.Rd, buf[:])
@@ -117,6 +133,7 @@ func (d Decoder) ReadDouble(fieldName string) float64 {
 	return math.Float64frombits(ByteOrder.Uint64(buf[:]))
 }
 
+// ReadFloat reads an IEEE754 float32 from the reader. ByteOrder is respected.
 func (d Decoder) ReadFloat(fieldName string) float32 {
 	var buf [FloatSize]byte
 	_, err := io.ReadFull(d.Rd, buf[:])
@@ -125,6 +142,7 @@ func (d Decoder) ReadFloat(fieldName string) float32 {
 	return math.Float32frombits(ByteOrder.Uint32(buf[:]))
 }
 
+// ReadID reads an id.ID from the reader.
 func (d Decoder) ReadID(fieldName string) id.ID {
 	return id.ParseID(d.ReadString(fieldName))
 }

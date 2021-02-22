@@ -81,10 +81,12 @@ func main() {
 	}
 }
 
+// Block is a fancy word for ID.
 type Block struct {
 	ID string
 }
 
+// TemplateData is the template structure that will be passed into the template.
 type TemplateData struct {
 	InFile  string
 	OutFile string
