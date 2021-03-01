@@ -12,21 +12,40 @@ func init() {
 	RegisterPacket(PhasePlay, reflect.TypeOf(ClientboundTags{}))
 }
 
+// Tag is a tag, which has an ID and a list of numeric
+// IDs that are considered to have the property defined
+// by the tag ID. An example is `minecraft:enderman_holdable`,
+// which groups all blocks that can be held by an enderman.
 type Tag struct {
-	Name    id.ID
+	// Name is the ID of this tag.
+	Name id.ID
+	// Entries is a list of numeric IDs that
+	// should be considered to be of this tag-type.
 	Entries []int
 }
 
+// ClientboundTags sends a collection of IDs by property
+// to the client. An example is a list of IDs that are considered
+// blocks, where the ID is the tag and the list is a list
+// of numeric IDs.
 type ClientboundTags struct {
-	BlockTags  []Tag
-	ItemTags   []Tag
-	FluidTags  []Tag
+	// BlockTags are the block tags that the game uses.
+	BlockTags []Tag
+	// ItemTags are the item tags that the game uses.
+	ItemTags []Tag
+	// FluidTags are the fluid tags that the game uses.
+	FluidTags []Tag
+	// EntityTags are the entity tags that the game uses.
 	EntityTags []Tag
 }
 
-func (ClientboundTags) ID() ID       { return IDClientboundTags }
+// ID returns the constant packet ID.
+func (ClientboundTags) ID() ID { return IDClientboundTags }
+
+// Name returns the constant packet name.
 func (ClientboundTags) Name() string { return "Tags" }
 
+// EncodeInto writes this packet into the given writer.
 func (c ClientboundTags) EncodeInto(w io.Writer) (err error) {
 	defer recoverAndSetErr(&err)
 
