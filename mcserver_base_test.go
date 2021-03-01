@@ -28,12 +28,20 @@ func TestServerSuite(t *testing.T) {
 type ServerSuite struct {
 	suite.Suite
 
+	// listener is the listener that the server of this suite uses.
 	listener net.Listener
 
+	// openConnsLock protects openConns.
 	openConnsLock sync.Mutex
-	openConns     []net.Conn
+	// openConns holds all connections that were opened using the suite
+	// to connect to the test server.
+	openConns []net.Conn
 
-	server   *MCServer
+	// ctx is the context with which the test server was started.
+	ctx context.Context
+	// server is the test server.
+	server *MCServer
+	// cancelFn is the cancel function of the test context.
 	cancelFn func()
 }
 
@@ -63,6 +71,7 @@ func (suite *ServerSuite) SetupTest() {
 			panic(err)
 		}
 	}()
+	suite.ctx = ctx
 	suite.cancelFn = cancel
 }
 

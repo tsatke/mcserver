@@ -2,6 +2,7 @@ package mcserver
 
 import (
 	"encoding/json"
+	"net"
 	"sync"
 
 	"github.com/tsatke/mcserver/network/packet"
@@ -128,4 +129,22 @@ func (suite *ServerSuite) TestMultipleConnections() {
 		}
 		wg.Wait()
 	})
+}
+
+func (suite *ServerSuite) TestContextCancelStopsServer() {
+	// copied from SetupSuite()
+	conn, err := net.Dial("tcp", suite.listener.Addr().String())
+	suite.NoError(err)
+	suite.NotNil(conn)
+	suite.NoError(conn.Close())
+
+	suite.cancelFn() // cancel the server run context
+
+	conn, err = net.Dial("tcp", suite.listener.Addr().String())
+	// dial must fail, since context was already cancelled
+	suite.Error(err)
+	suite.Nil(conn)
+	if conn != nil {
+		_ = conn.Close()
+	}
 }

@@ -16,10 +16,10 @@ import (
 	"github.com/tsatke/mcserver/config"
 )
 
-func run(stdin io.Reader, stdout io.Writer) error {
+func run(_ io.Reader, stdout io.Writer) error {
 	cfg, err := loadConfig()
 	if err != nil {
-		return fmt.Errorf("load config; %w", err)
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	log := zerolog.New(

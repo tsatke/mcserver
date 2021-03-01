@@ -64,6 +64,12 @@ func New(config config.Config, opts ...Option) (*MCServer, error) {
 // loop, accepting incoming connections. This method terminates only if an error occurs or if the context
 // was cancelled.
 func (s *MCServer) Start(ctx context.Context) error {
+	go func() {
+		<-ctx.Done()
+		// wait for context cancellation and close listener
+		_ = s.listener.Close()
+	}()
+
 	s.log.Info().
 		Msg("preparing game")
 	if err := s.prepareGame(ctx); err != nil {
@@ -82,7 +88,7 @@ func (s *MCServer) Start(ctx context.Context) error {
 				// if the context was cancelled, ignore the error
 				s.log.Debug().
 					Msg("stopped waiting for incoming connections")
-				s.shutdown() // release resources
+				// listener is closed in separate goroutine
 				return nil
 			default:
 				// otherwise, return the error, interrupting the loop
@@ -94,10 +100,6 @@ func (s *MCServer) Start(ctx context.Context) error {
 			Msg("incoming connection")
 		go s.handleRequest(conn)
 	}
-}
-
-func (s *MCServer) shutdown() {
-	_ = s.listener.Close()
 }
 
 func (s *MCServer) prepareGame(ctx context.Context) error {
